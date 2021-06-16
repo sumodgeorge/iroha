@@ -36,7 +36,6 @@ namespace iroha {
       iroha::expected::Result<size_t, std::string> countPeers() override;
       iroha::expected::Result<size_t, std::string> countDomains() override;
       iroha::expected::Result<size_t, std::string> countTransactions() override;
-
      private:
       std::shared_ptr<RocksDBContext> db_context_;
       logger::LoggerPtr log_;
