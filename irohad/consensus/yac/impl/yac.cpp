@@ -36,8 +36,13 @@ namespace iroha {
           ClusterOrdering order,
           Round round,
           logger::LoggerPtr log) {
-        return std::make_shared<Yac>(
-            vote_storage, network, crypto, timer, order, round, std::move(log));
+        return std::make_shared<Yac>(vote_storage,
+                                     network,
+                                     crypto,
+                                     timer,
+                                     order,
+                                     round,
+                                     std::move(log));
       }
 
       Yac::Yac(YacVoteStorage vote_storage,
@@ -213,8 +218,7 @@ namespace iroha {
 
       // ------|Apply data|------
 
-      std::optional<Answer> Yac::applyState(
-          const std::vector<VoteMessage> &state) {
+      std::optional<Answer> Yac::applyState(const std::vector<VoteMessage> &state) {
         auto answer =
             vote_storage_.store(state, cluster_order_.getNumberOfPeers());
 

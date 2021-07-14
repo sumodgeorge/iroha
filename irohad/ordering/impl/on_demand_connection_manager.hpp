@@ -27,7 +27,12 @@ namespace iroha {
        * current round (issuer), reject round, and commit round
        * Proposal is requested from the current ordering service: issuer
        */
-      enum PeerType { kRejectConsumer = 0, kCommitConsumer, kIssuer, kCount };
+      enum PeerType {
+        kRejectConsumer = 0,
+        kCommitConsumer,
+        kIssuer,
+        kCount
+      };
 
       /// Collection with value types which represent peers
       template <typename T>
