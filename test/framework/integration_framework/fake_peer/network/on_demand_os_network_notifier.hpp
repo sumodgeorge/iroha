@@ -37,8 +37,6 @@ namespace integration_framework {
 
       bool isEmptyBatchesCache() const override;
 
-      bool hasProposal(iroha::consensus::Round round) const override;
-
       rxcpp::observable<iroha::consensus::Round>
       getProposalRequestsObservable();
 

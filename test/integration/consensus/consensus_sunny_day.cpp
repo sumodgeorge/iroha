@@ -15,7 +15,7 @@
 #include "consensus/yac/transport/impl/network_impl.hpp"
 #include "consensus/yac/yac.hpp"
 #include "module/shared_model/cryptography/crypto_defaults.hpp"
-#include "common/common.hpp"
+#include "subscription/common.hpp"
 
 #include "framework/stateless_valid_field_helpers.hpp"
 #include "framework/test_client_factory.hpp"
@@ -101,8 +101,7 @@ class ConsensusSunnyDayTest : public ::testing::Test {
 
     service = std::make_shared<ServiceImpl>(
         getTestLogger("Service"),
-        [yac(iroha::utils::make_weak(yac)),
-         this](std::vector<VoteMessage> state) {
+        [yac(std::weak_ptr(yac)), this](std::vector<VoteMessage> state) {
           auto maybe_yac = yac.lock();
           if (not maybe_yac) {
             return;

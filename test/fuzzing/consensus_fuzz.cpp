@@ -7,7 +7,6 @@
 
 #include <libfuzzer/libfuzzer_macro.h>
 
-#include "common/common.hpp"
 #include "consensus/round.hpp"
 #include "consensus/yac/cluster_order.hpp"
 #include "consensus/yac/impl/yac_crypto_provider_impl.hpp"
@@ -88,7 +87,7 @@ namespace fuzzing {
           getTestLoggerManager(logger::LogLevel::kCritical)
               ->getChild("Service")
               ->getLogger(),
-          [yac(iroha::utils::make_weak(yac_))](
+          [yac(std::weak_ptr(yac_))](
               std::vector<iroha::consensus::yac::VoteMessage> state) {
             if (auto maybe_yac = yac.lock()) {
               maybe_yac->onState(std::move(state));

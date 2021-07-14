@@ -272,8 +272,6 @@ class Irohad {
   std::shared_ptr<iroha::ametsuchi::Storage> storage;
 
  protected:
-  std::shared_ptr<iroha::Subscription> subscription_engine_;
-
   rxcpp::observable<shared_model::interface::types::HashType> finalized_txs_;
 
   // initialization objects
@@ -394,6 +392,8 @@ class Irohad {
   logger::LoggerManagerTreePtr log_manager_;  ///< application root log manager
 
   logger::LoggerPtr log_;  ///< log for local messages
+
+  std::shared_ptr<iroha::Subscription> subscription_engine_;
 };
 
 #endif  // IROHA_APPLICATION_HPP
