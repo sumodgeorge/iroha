@@ -21,8 +21,7 @@ namespace integration_framework {
      public:
       using StateMessage = std::vector<iroha::consensus::yac::VoteMessage>;
 
-      std::optional<iroha::consensus::yac::Answer> onState(
-          StateMessage state) override;
+      void onState(StateMessage state) override;
 
       rxcpp::observable<std::shared_ptr<const YacMessage>> getObservable();
 

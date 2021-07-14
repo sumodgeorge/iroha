@@ -23,6 +23,11 @@ namespace iroha {
          */
         virtual void invokeAfterDelay(std::function<void()> handler) = 0;
 
+        /**
+         * Stop timer
+         */
+        virtual void deny() = 0;
+
         virtual ~Timer() = default;
       };
     }  // namespace yac

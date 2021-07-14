@@ -7,6 +7,7 @@
 
 #include "consensus/yac/impl/supermajority_checker_bft.hpp"
 #include "consensus/yac/storage/yac_proposal_storage.hpp"
+#include "framework/test_subscriber.hpp"
 
 #include "module/irohad/consensus/yac/yac_fixture.hpp"
 
@@ -14,6 +15,7 @@ using ::testing::_;
 using ::testing::Return;
 
 using namespace iroha::consensus::yac;
+using namespace framework::test_subscriber;
 
 static constexpr size_t kFixedRandomNumber = 9;
 
@@ -32,6 +34,8 @@ TEST_F(YacTest, InvalidCaseWhenNotReceiveSupermajority) {
   ASSERT_TRUE(my_order);
 
   initYac(my_order.value());
+
+  EXPECT_CALL(*timer, deny()).Times(0);
 
   EXPECT_CALL(*crypto, verify(_)).WillRepeatedly(Return(true));
 
@@ -79,6 +83,8 @@ TEST_F(YacTest, InvalidCaseWhenDoesNotVerify) {
 
   EXPECT_CALL(*network, sendState(_, _)).Times(0);
 
+  EXPECT_CALL(*timer, deny()).Times(0);
+
   EXPECT_CALL(*crypto, verify(_)).WillRepeatedly(Return(false));
 
   YacHash hash1(iroha::consensus::Round{1, 1}, "proposal_hash", "block_hash");
@@ -110,6 +116,8 @@ TEST_F(YacTest, ValidCaseWhenReceiveOnVoteAfterReject) {
   ASSERT_TRUE(my_order);
 
   initYac(my_order.value());
+
+  EXPECT_CALL(*timer, deny()).Times(1);
 
   EXPECT_CALL(*crypto, verify(_)).WillRepeatedly(Return(true));
 

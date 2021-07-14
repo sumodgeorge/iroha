@@ -47,6 +47,8 @@ namespace iroha {
           invoke_times_.store(times);
         }
 
+        MOCK_METHOD0(deny, void());
+
         MockTimer() = default;
 
         MockTimer(const MockTimer &rhs) {}

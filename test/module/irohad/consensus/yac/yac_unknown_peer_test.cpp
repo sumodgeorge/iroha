@@ -6,6 +6,7 @@
 #include "consensus/yac/storage/yac_proposal_storage.hpp"
 
 #include "framework/crypto_literals.hpp"
+#include "framework/test_subscriber.hpp"
 #include "module/irohad/consensus/yac/yac_fixture.hpp"
 
 using ::testing::_;
@@ -13,6 +14,7 @@ using ::testing::AtLeast;
 using ::testing::Return;
 
 using namespace iroha::consensus::yac;
+using namespace framework::test_subscriber;
 using namespace std;
 
 /**
@@ -26,6 +28,9 @@ TEST_F(YacTest, UnknownVoteBeforeCommit) {
   initYac(my_order.value());
 
   // verify that commit not emitted
+  auto wrapper = make_test_subscriber<CallExact>(yac->onOutcome(), 0);
+  wrapper.subscribe();
+
   EXPECT_CALL(*network, sendState(_, _)).Times(0);
 
   EXPECT_CALL(*crypto, verify(_))
@@ -36,11 +41,13 @@ TEST_F(YacTest, UnknownVoteBeforeCommit) {
 
   // send enough votes for next valid to make a commit
   for (auto i = 0; i < 4; ++i) {
-    ASSERT_FALSE(yac->onState({createVote(my_hash, std::to_string(i))}));
+    yac->onState({createVote(my_hash, std::to_string(i))});
   }
 
   // send a vote from unknown peer
-  ASSERT_FALSE(yac->onState({createVote(my_hash, "unknown")}));
+  yac->onState({createVote(my_hash, "unknown")});
+
+  ASSERT_TRUE(wrapper.validate());
 }
 
 /**
@@ -60,6 +67,8 @@ TEST_F(YacTest, UnknownVoteAfterCommit) {
   initYac(my_order.value());
 
   EXPECT_CALL(*network, sendState(_, _)).Times(0);
+
+  EXPECT_CALL(*timer, deny()).Times(AtLeast(1));
 
   EXPECT_CALL(*crypto, verify(_)).Times(1).WillRepeatedly(Return(true));
 

@@ -8,6 +8,7 @@
 
 #include "consensus/yac/storage/yac_proposal_storage.hpp"
 
+#include "framework/test_subscriber.hpp"
 #include "module/irohad/consensus/yac/yac_fixture.hpp"
 
 using ::testing::_;
@@ -15,6 +16,7 @@ using ::testing::AtLeast;
 using ::testing::Return;
 
 using namespace iroha::consensus::yac;
+using namespace framework::test_subscriber;
 using namespace std;
 
 static constexpr size_t kRandomFixedNumber = 9;
@@ -34,6 +36,8 @@ TEST_F(YacTest, ValidCaseWhenReceiveSupermajority) {
   ASSERT_TRUE(my_order);
 
   initYac(my_order.value());
+
+  EXPECT_CALL(*timer, deny()).Times(0);
 
   EXPECT_CALL(*crypto, verify(_)).WillRepeatedly(Return(true));
 
@@ -67,6 +71,12 @@ TEST_F(YacTest, ValidCaseWhenReceiveCommit) {
   initYac(my_order.value());
 
   YacHash my_hash(iroha::consensus::Round{1, 1}, "proposal_hash", "block_hash");
+  auto wrapper = make_test_subscriber<CallExact>(yac->onOutcome(), 1);
+  wrapper.subscribe([my_hash](auto val) {
+    ASSERT_EQ(my_hash, boost::get<CommitMessage>(val).votes.at(0).hash);
+  });
+
+  EXPECT_CALL(*timer, deny()).Times(AtLeast(1));
 
   EXPECT_CALL(*crypto, verify(_)).WillRepeatedly(Return(true));
 
@@ -80,8 +90,8 @@ TEST_F(YacTest, ValidCaseWhenReceiveCommit) {
   for (auto i = 0; i < 4; ++i) {
     votes.push_back(createVote(my_hash, std::to_string(i)));
   };
-  auto val = *yac->onState(votes);
-  ASSERT_EQ(my_hash, boost::get<CommitMessage>(val).votes.at(0).hash);
+  yac->onState(votes);
+  ASSERT_TRUE(wrapper.validate());
 }
 
 /**
@@ -90,6 +100,7 @@ TEST_F(YacTest, ValidCaseWhenReceiveCommit) {
  * AND receive commit for voted hash
  * AND receive second commit for voted hash
  * @then commit is emitted once
+ * AND timer is denied once
  */
 TEST_F(YacTest, ValidCaseWhenReceiveCommitTwice) {
   auto my_peers = decltype(default_peers)(
@@ -99,9 +110,15 @@ TEST_F(YacTest, ValidCaseWhenReceiveCommitTwice) {
   auto my_order = ClusterOrdering::create(my_peers);
   ASSERT_TRUE(my_order);
 
+  EXPECT_CALL(*timer, deny()).Times(1);
+
   initYac(my_order.value());
 
   YacHash my_hash(iroha::consensus::Round{1, 1}, "proposal_hash", "block_hash");
+  auto wrapper = make_test_subscriber<CallExact>(yac->onOutcome(), 1);
+  wrapper.subscribe([my_hash](auto val) {
+    ASSERT_EQ(my_hash, boost::get<CommitMessage>(val).votes.at(0).hash);
+  });
 
   EXPECT_CALL(*crypto, verify(_)).WillRepeatedly(Return(true));
 
@@ -116,14 +133,15 @@ TEST_F(YacTest, ValidCaseWhenReceiveCommitTwice) {
   for (auto i = 0; i < 3; ++i) {
     votes.push_back(createVote(my_hash, std::to_string(i)));
   };
-  auto val = *yac->onState(votes);
-  ASSERT_EQ(my_hash, boost::get<CommitMessage>(val).votes.at(0).hash);
+  yac->onState(votes);
 
   // second commit
   for (auto i = 1; i < 4; ++i) {
     votes.push_back(createVote(my_hash, std::to_string(i)));
   };
-  ASSERT_FALSE(yac->onState(votes));
+  yac->onState(votes);
+
+  ASSERT_TRUE(wrapper.validate());
 }
 
 TEST_F(YacTest, ValidCaseWhenSoloConsensus) {
@@ -135,9 +153,16 @@ TEST_F(YacTest, ValidCaseWhenSoloConsensus) {
 
   initYac(my_order.value());
 
+  EXPECT_CALL(*timer, deny()).Times(AtLeast(1));
+
   EXPECT_CALL(*crypto, verify(_)).Times(2).WillRepeatedly(Return(true));
 
   YacHash my_hash(iroha::consensus::Round{1, 1}, "proposal_hash", "block_hash");
+
+  auto wrapper = make_test_subscriber<CallExact>(yac->onOutcome(), 1);
+  wrapper.subscribe([my_hash](auto val) {
+    ASSERT_EQ(my_hash, boost::get<CommitMessage>(val).votes.at(0).hash);
+  });
 
   auto vote_message = createVote(my_hash, std::to_string(0));
 
@@ -145,12 +170,13 @@ TEST_F(YacTest, ValidCaseWhenSoloConsensus) {
 
   yac->vote(my_hash, my_order.value());
 
-  auto val = *yac->onState({vote_message});
-  ASSERT_EQ(my_hash, boost::get<CommitMessage>(val).votes.at(0).hash);
+  yac->onState({vote_message});
 
   auto commit_message = CommitMessage({vote_message});
 
-  ASSERT_FALSE(yac->onState(commit_message.votes));
+  yac->onState(commit_message.votes);
+
+  ASSERT_TRUE(wrapper.validate());
 }
 
 /**
@@ -172,6 +198,8 @@ TEST_F(YacTest, ValidCaseWhenVoteAfterCommit) {
   initYac(my_order.value());
 
   EXPECT_CALL(*network, sendState(_, _)).Times(0);
+
+  EXPECT_CALL(*timer, deny()).Times(AtLeast(1));
 
   EXPECT_CALL(*crypto, verify(_)).Times(1).WillRepeatedly(Return(true));
 
