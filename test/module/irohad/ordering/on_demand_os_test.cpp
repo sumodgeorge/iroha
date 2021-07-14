@@ -15,6 +15,7 @@
 #include "interfaces/iroha_internal/transaction_batch_impl.hpp"
 #include "module/irohad/ametsuchi/ametsuchi_mocks.hpp"
 #include "module/irohad/common/validators_config.hpp"
+#include "module/irohad/ordering/mock_proposal_creation_strategy.hpp"
 #include "module/shared_model/cryptography/crypto_defaults.hpp"
 #include "module/shared_model/interface_mocks.hpp"
 #include "module/shared_model/validators/validators.hpp"
@@ -22,6 +23,7 @@
 
 using namespace iroha;
 using namespace iroha::ordering;
+using namespace iroha::ordering::transport;
 
 using testing::_;
 using testing::A;
@@ -46,6 +48,7 @@ class OnDemandOsTest : public ::testing::Test {
                          target_round = nextCommitRound(commit_round),
                          reject_round = nextRejectRound(initial_round);
   NiceMock<iroha::ametsuchi::MockTxPresenceCache> *mock_cache;
+  std::shared_ptr<MockProposalCreationStrategy> proposal_creation_strategy;
 
   void SetUp() override {
     // TODO: nickaleks IR-1811 use mock factory
@@ -64,10 +67,16 @@ class OnDemandOsTest : public ::testing::Test {
         .WillByDefault(Return(std::vector<iroha::ametsuchi::TxCacheStatusType>{
             iroha::ametsuchi::tx_cache_status_responses::Missing()}));
 
+    proposal_creation_strategy =
+        std::make_shared<MockProposalCreationStrategy>();
+    ON_CALL(*proposal_creation_strategy, shouldCreateRound(_))
+        .WillByDefault(Return(true));
+
     os = std::make_shared<OnDemandOrderingServiceImpl>(
         transaction_limit,
         std::move(factory),
         std::move(tx_cache),
+        proposal_creation_strategy,
         getTestLogger("OdOrderingService"),
         proposal_limit);
   }
@@ -211,6 +220,7 @@ TEST_F(OnDemandOsTest, UseFactoryForProposal) {
       transaction_limit,
       std::move(factory),
       std::move(tx_cache),
+      proposal_creation_strategy,
       getTestLogger("OdOrderingService"),
       proposal_limit);
 
@@ -360,6 +370,9 @@ TEST_F(OnDemandOsTest, RejectCommit) {
  * @then it created
  */
 TEST_F(OnDemandOsTest, FailOnCreationStrategy) {
+  EXPECT_CALL(*proposal_creation_strategy, shouldCreateRound(_))
+      .WillRepeatedly(Return(false));
+
   generateTransactionsAndInsert({1, 2});
 
   os->onCollaborationOutcome(commit_round);

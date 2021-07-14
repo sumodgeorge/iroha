@@ -71,7 +71,6 @@ namespace iroha {
   namespace network {
     class GenericClientFactory;
     class MstTransportGrpc;
-    struct OrderingEvent;
     class OrderingServiceTransport;
     class ServerRunner;
     template <typename Response>
@@ -329,6 +328,24 @@ namespace integration_framework {
     IntegrationTestFramework &sendBatch(const TransactionBatchSPtr &batch);
 
     /**
+     * Send batches of transactions to this peer's on-demand ordering service.
+     * @param batches - the batch to send
+     * @return this
+     */
+    IntegrationTestFramework &sendBatches(
+        const std::vector<TransactionBatchSPtr> &batches);
+
+    /**
+     * Request a proposal from this peer's on-demand ordering service.
+     * @param round - the round for which to request a proposal
+     * @param timeout - the timeout for waiting the proposal
+     * @return the proposal if received one
+     */
+    boost::optional<std::shared_ptr<const shared_model::interface::Proposal>>
+    requestProposal(const iroha::consensus::Round &round,
+                    std::chrono::milliseconds timeout);
+
+    /**
      * Send MST state message to this peer.
      * @param src_key - the key of the peer which the message appears to come
      * from
@@ -482,11 +499,9 @@ namespace integration_framework {
     logger::LoggerPtr log_;
     logger::LoggerManagerTreePtr log_manager_;
 
-    std::shared_ptr<
+    std::unique_ptr<
         CheckerQueue<std::shared_ptr<const shared_model::interface::Proposal>>>
         proposal_queue_;
-    std::shared_ptr<iroha::BaseSubscriber<bool, iroha::network::OrderingEvent>>
-        proposal_subscription_;
     std::shared_ptr<CheckerQueue<VerifiedProposalType>>
         verified_proposal_queue_;
     std::shared_ptr<

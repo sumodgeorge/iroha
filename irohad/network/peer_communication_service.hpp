@@ -6,6 +6,7 @@
 #ifndef IROHA_PEER_COMMUNICATION_SERVICE_HPP
 #define IROHA_PEER_COMMUNICATION_SERVICE_HPP
 
+#include <rxcpp/rx-observable-fwd.hpp>
 #include "network/ordering_gate_common.hpp"
 
 namespace shared_model {
@@ -30,6 +31,13 @@ namespace iroha {
       virtual void propagate_batch(
           std::shared_ptr<shared_model::interface::TransactionBatch> batch)
           const = 0;
+
+      /**
+       * Event is triggered when proposal arrives from network.
+       * @return observable with Proposals.
+       * (List of Proposals)
+       */
+      virtual rxcpp::observable<OrderingEvent> onProposal() const = 0;
 
       virtual ~PeerCommunicationService() = default;
     };

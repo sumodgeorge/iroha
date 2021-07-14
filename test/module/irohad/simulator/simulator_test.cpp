@@ -218,7 +218,7 @@ TEST_F(SimulatorTest, SomeFailingTxs) {
       proposal->height() - 1,
       shared_model::crypto::Hash{std::string("hash")});
   OrderingEvent ordering_event{
-      std::make_optional(proposal), consensus::Round{}, ledger_state};
+      boost::make_optional(proposal), consensus::Round{}, ledger_state};
   auto verification_result =
       simulator->processProposal(ordering_event).verified_proposal_result;
   ASSERT_TRUE(verification_result);

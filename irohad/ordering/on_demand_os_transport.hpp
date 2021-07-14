@@ -7,11 +7,14 @@
 #define IROHA_ON_DEMAND_OS_TRANSPORT_HPP
 
 #include <memory>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
+#include <boost/optional.hpp>
 #include "common/result_fwd.hpp"
 #include "consensus/round.hpp"
+#include "cryptography/hash.hpp"
 #include "interfaces/iroha_internal/transaction_batch.hpp"
 
 namespace shared_model {
@@ -31,6 +34,25 @@ namespace iroha {
        */
       class OdOsNotification {
        public:
+        /**
+         * Type of stored proposals
+         */
+        using ProposalType = shared_model::interface::Proposal;
+
+        struct BatchPointerHasher {
+          shared_model::crypto::Hash::Hasher hasher_;
+          size_t operator()(
+              const std::shared_ptr<shared_model::interface::TransactionBatch>
+                  &a) const {
+            return hasher_(a->reducedHash());
+          }
+        };
+
+        using BatchesSetType = std::unordered_set<
+            std::shared_ptr<shared_model::interface::TransactionBatch>,
+            BatchPointerHasher,
+            shared_model::interface::BatchHashEquality>;
+
         /**
          * Type of stored transaction batches
          */
@@ -52,8 +74,10 @@ namespace iroha {
          * Callback on request about proposal
          * @param round - number of collaboration round.
          * Calculated as block_height + 1
+         * @return proposal for requested round
          */
-        virtual void onRequestProposal(consensus::Round round) = 0;
+        virtual boost::optional<std::shared_ptr<const ProposalType>>
+        onRequestProposal(consensus::Round round) = 0;
 
         virtual ~OdOsNotification() = default;
       };

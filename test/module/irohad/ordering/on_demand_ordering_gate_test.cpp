@@ -11,9 +11,11 @@
 #include <boost/range/adaptor/indirected.hpp>
 #include "framework/crypto_literals.hpp"
 #include "framework/test_logger.hpp"
+#include "framework/test_subscriber.hpp"
 #include "interfaces/iroha_internal/transaction_batch_impl.hpp"
 #include "module/irohad/ametsuchi/mock_tx_presence_cache.hpp"
 #include "module/irohad/ordering/mock_on_demand_os_notification.hpp"
+#include "module/irohad/ordering/mock_proposal_creation_strategy.hpp"
 #include "module/irohad/ordering/ordering_mocks.hpp"
 #include "module/shared_model/builders/protobuf/test_transaction_builder.hpp"
 #include "module/shared_model/cryptography/crypto_defaults.hpp"
@@ -24,6 +26,7 @@ using namespace iroha;
 using namespace iroha::ordering;
 using namespace iroha::ordering::transport;
 using namespace iroha::network;
+using namespace framework::test_subscriber;
 
 using ::testing::_;
 using ::testing::AtMost;
@@ -41,10 +44,12 @@ class OnDemandOrderingGateTest : public ::testing::Test {
  public:
   void SetUp() override {
     ordering_service = std::make_shared<MockOnDemandOrderingService>();
-    notification = std::make_shared<MockOdOsNotification>();
+    notification = new MockOdOsNotification();
     auto ufactory = std::make_unique<NiceMock<MockUnsafeProposalFactory>>();
     factory = ufactory.get();
     tx_cache = std::make_shared<ametsuchi::MockTxPresenceCache>();
+    proposal_creation_strategy =
+        std::make_shared<MockProposalCreationStrategy>();
     ON_CALL(*tx_cache,
             check(testing::Matcher<const shared_model::crypto::Hash &>(_)))
         .WillByDefault(
@@ -52,9 +57,12 @@ class OnDemandOrderingGateTest : public ::testing::Test {
                 iroha::ametsuchi::tx_cache_status_responses::Missing())));
     ordering_gate = std::make_shared<OnDemandOrderingGate>(
         ordering_service,
-        notification,
+        std::unique_ptr<OdOsNotification>(notification),
+        processed_tx_hashes.get_observable(),
+        rounds.get_observable(),
         std::move(ufactory),
         tx_cache,
+        proposal_creation_strategy,
         1000,
         getTestLogger("OrderingGate"));
 
@@ -84,10 +92,15 @@ class OnDemandOrderingGateTest : public ::testing::Test {
         .finish();
   }
 
+  rxcpp::subjects::subject<
+      std::shared_ptr<const cache::OrderingGateCache::HashesSetType>>
+      processed_tx_hashes;
+  rxcpp::subjects::subject<OnDemandOrderingGate::RoundSwitch> rounds;
   std::shared_ptr<MockOnDemandOrderingService> ordering_service;
-  std::shared_ptr<MockOdOsNotification> notification;
+  MockOdOsNotification *notification;
   NiceMock<MockUnsafeProposalFactory> *factory;
   std::shared_ptr<ametsuchi::MockTxPresenceCache> tx_cache;
+  std::shared_ptr<MockProposalCreationStrategy> proposal_creation_strategy;
   std::shared_ptr<OnDemandOrderingGate> ordering_gate;
   const consensus::Round round = {2, kFirstRejectRound};
 
@@ -119,7 +132,7 @@ TEST_F(OnDemandOrderingGateTest, propagateBatch) {
 TEST_F(OnDemandOrderingGateTest, BlockEvent) {
   auto mproposal = std::make_unique<MockProposal>();
   auto proposal = mproposal.get();
-  std::optional<std::shared_ptr<const shared_model::interface::Proposal>>
+  boost::optional<std::shared_ptr<const OdOsNotification::ProposalType>>
       oproposal(std::move(mproposal));
   std::vector<std::shared_ptr<MockTransaction>> txs{
       std::make_shared<MockTransaction>()};
@@ -131,21 +144,27 @@ TEST_F(OnDemandOrderingGateTest, BlockEvent) {
 
   EXPECT_CALL(*ordering_service, onCollaborationOutcome(round)).Times(1);
 
-  OnDemandOrderingService::BatchesSetType transactions;
+  transport::OdOsNotification::BatchesSetType transactions;
   EXPECT_CALL(*ordering_service, forCachedBatches(_))
       .WillOnce(InvokeArgument<0>(transactions));
 
-  EXPECT_CALL(*notification, onRequestProposal(round)).Times(1);
+  EXPECT_CALL(*proposal_creation_strategy, onCollaborationOutcome(round, 1))
+      .Times(1);
+  EXPECT_CALL(*notification, onRequestProposal(round))
+      .WillOnce(Return(ByMove(std::move(oproposal))));
 
   auto event = OnDemandOrderingGate::RoundSwitch(round, ledger_state);
 
-  ordering_gate->processRoundSwitch(event);
+  auto gate_wrapper =
+      make_test_subscriber<CallExact>(ordering_gate->onProposal(), 1);
+  gate_wrapper.subscribe([&](auto val) {
+    ASSERT_EQ(proposal, getProposalUnsafe(val).get());
+    EXPECT_EQ(val.ledger_state->ledger_peers, event.ledger_state->ledger_peers);
+  });
 
-  auto val =
-      ordering_gate->processProposalRequest({std::move(oproposal), round});
+  rounds.get_subscriber().on_next(event);
 
-  ASSERT_EQ(proposal, getProposalUnsafe(*val).get());
-  EXPECT_EQ(val->ledger_state->ledger_peers, event.ledger_state->ledger_peers);
+  ASSERT_TRUE(gate_wrapper.validate());
 }
 
 /**
@@ -157,7 +176,7 @@ TEST_F(OnDemandOrderingGateTest, BlockEvent) {
 TEST_F(OnDemandOrderingGateTest, EmptyEvent) {
   auto mproposal = std::make_unique<MockProposal>();
   auto proposal = mproposal.get();
-  std::optional<std::shared_ptr<const shared_model::interface::Proposal>>
+  boost::optional<std::shared_ptr<const OdOsNotification::ProposalType>>
       oproposal(std::move(mproposal));
   std::vector<std::shared_ptr<MockTransaction>> txs{
       std::make_shared<MockTransaction>()};
@@ -168,17 +187,21 @@ TEST_F(OnDemandOrderingGateTest, EmptyEvent) {
       .WillByDefault(Return(txs | boost::adaptors::indirected));
 
   EXPECT_CALL(*ordering_service, onCollaborationOutcome(round)).Times(1);
-  EXPECT_CALL(*notification, onRequestProposal(round)).Times(1);
+  EXPECT_CALL(*notification, onRequestProposal(round))
+      .WillOnce(Return(ByMove(std::move(oproposal))));
 
   auto event = OnDemandOrderingGate::RoundSwitch(round, ledger_state);
 
-  ordering_gate->processRoundSwitch(event);
+  auto gate_wrapper =
+      make_test_subscriber<CallExact>(ordering_gate->onProposal(), 1);
+  gate_wrapper.subscribe([&](auto val) {
+    ASSERT_EQ(proposal, getProposalUnsafe(val).get());
+    EXPECT_EQ(val.ledger_state->ledger_peers, event.ledger_state->ledger_peers);
+  });
 
-  auto val =
-      ordering_gate->processProposalRequest({std::move(oproposal), round});
+  rounds.get_subscriber().on_next(event);
 
-  ASSERT_EQ(proposal, getProposalUnsafe(*val).get());
-  EXPECT_EQ(val->ledger_state->ledger_peers, event.ledger_state->ledger_peers);
+  ASSERT_TRUE(gate_wrapper.validate());
 }
 
 /**
@@ -188,19 +211,21 @@ TEST_F(OnDemandOrderingGateTest, EmptyEvent) {
  * @then new empty proposal round based on the received height is initiated
  */
 TEST_F(OnDemandOrderingGateTest, BlockEventNoProposal) {
-  std::optional<std::shared_ptr<const shared_model::interface::Proposal>>
+  boost::optional<std::shared_ptr<const OdOsNotification::ProposalType>>
       proposal;
 
   EXPECT_CALL(*ordering_service, onCollaborationOutcome(round)).Times(1);
-  EXPECT_CALL(*notification, onRequestProposal(round)).Times(1);
+  EXPECT_CALL(*notification, onRequestProposal(round))
+      .WillOnce(Return(ByMove(std::move(proposal))));
 
-  ordering_gate->processRoundSwitch(
+  auto gate_wrapper =
+      make_test_subscriber<CallExact>(ordering_gate->onProposal(), 1);
+  gate_wrapper.subscribe([&](auto val) { ASSERT_FALSE(val.proposal); });
+
+  rounds.get_subscriber().on_next(
       OnDemandOrderingGate::RoundSwitch(round, ledger_state));
 
-  auto val =
-      ordering_gate->processProposalRequest({std::move(proposal), round});
-
-  ASSERT_FALSE(val->proposal);
+  ASSERT_TRUE(gate_wrapper.validate());
 }
 
 /**
@@ -210,19 +235,21 @@ TEST_F(OnDemandOrderingGateTest, BlockEventNoProposal) {
  * @then new empty proposal round based on the received height is initiated
  */
 TEST_F(OnDemandOrderingGateTest, EmptyEventNoProposal) {
-  std::optional<std::shared_ptr<const shared_model::interface::Proposal>>
+  boost::optional<std::shared_ptr<const OdOsNotification::ProposalType>>
       proposal;
 
   EXPECT_CALL(*ordering_service, onCollaborationOutcome(round)).Times(1);
-  EXPECT_CALL(*notification, onRequestProposal(round)).Times(1);
+  EXPECT_CALL(*notification, onRequestProposal(round))
+      .WillOnce(Return(ByMove(std::move(proposal))));
 
-  ordering_gate->processRoundSwitch(
+  auto gate_wrapper =
+      make_test_subscriber<CallExact>(ordering_gate->onProposal(), 1);
+  gate_wrapper.subscribe([&](auto val) { ASSERT_FALSE(val.proposal); });
+
+  rounds.get_subscriber().on_next(
       OnDemandOrderingGate::RoundSwitch(round, ledger_state));
 
-  auto val =
-      ordering_gate->processProposalRequest({std::move(proposal), round});
-
-  ASSERT_FALSE(val->proposal);
+  ASSERT_TRUE(gate_wrapper.validate());
 }
 
 /**
@@ -242,13 +269,14 @@ TEST_F(OnDemandOrderingGateTest, ReplayedTransactionInProposal) {
   // initialize mock proposal
   auto proposal = std::make_shared<const NiceMock<MockProposal>>();
   ON_CALL(*proposal, transactions()).WillByDefault(Return(tx_range));
-  auto arriving_proposal = std::make_optional(
+  auto arriving_proposal = boost::make_optional(
       std::static_pointer_cast<const shared_model::interface::Proposal>(
           std::move(proposal)));
 
   // set expectations for ordering service
   EXPECT_CALL(*ordering_service, onCollaborationOutcome(round)).Times(1);
-  EXPECT_CALL(*notification, onRequestProposal(round)).Times(1);
+  EXPECT_CALL(*notification, onRequestProposal(round))
+      .WillOnce(Return(ByMove(std::move(arriving_proposal))));
   EXPECT_CALL(*tx_cache,
               check(testing::Matcher<const shared_model::crypto::Hash &>(_)))
       .WillOnce(Return(boost::make_optional<ametsuchi::TxCacheStatusType>(
@@ -269,12 +297,13 @@ TEST_F(OnDemandOrderingGateTest, ReplayedTransactionInProposal) {
       .Times(AtMost(1))
       .WillOnce(Return(ByMove(std::move(ufactory_proposal))));
 
-  ordering_gate->processRoundSwitch(
+  auto gate_wrapper =
+      make_test_subscriber<CallExact>(ordering_gate->onProposal(), 1);
+  gate_wrapper.subscribe([&](auto proposal) {});
+  rounds.get_subscriber().on_next(
       OnDemandOrderingGate::RoundSwitch(round, ledger_state));
 
-  auto val = ordering_gate->processProposalRequest(
-      {std::move(arriving_proposal), round});
-  ASSERT_TRUE(val);
+  ASSERT_TRUE(gate_wrapper.validate());
 }
 
 MATCHER_P(hashEq, arg1, "") {
@@ -297,13 +326,14 @@ TEST_F(OnDemandOrderingGateTest, RepeatedTransactionInProposal) {
   auto proposal = std::make_shared<MockProposal>();
   ON_CALL(*proposal, transactions()).WillByDefault(Return(txs));
 
-  auto arriving_proposal = std::make_optional(
+  auto arriving_proposal = boost::make_optional(
       std::static_pointer_cast<const shared_model::interface::Proposal>(
           std::move(proposal)));
 
   // set expectations for ordering service
   EXPECT_CALL(*ordering_service, onCollaborationOutcome(round)).Times(1);
-  EXPECT_CALL(*notification, onRequestProposal(round)).Times(1);
+  EXPECT_CALL(*notification, onRequestProposal(round))
+      .WillOnce(Return(ByMove(std::move(arriving_proposal))));
   EXPECT_CALL(*tx_cache,
               check(testing::Matcher<const shared_model::crypto::Hash &>(_)))
       .WillRepeatedly(Return(boost::make_optional<ametsuchi::TxCacheStatusType>(
@@ -320,12 +350,13 @@ TEST_F(OnDemandOrderingGateTest, RepeatedTransactionInProposal) {
       .Times(AtMost(1))
       .WillOnce(Return(ByMove(std::move(ufactory_proposal))));
 
-  ordering_gate->processRoundSwitch(
+  auto gate_wrapper =
+      make_test_subscriber<CallExact>(ordering_gate->onProposal(), 1);
+  gate_wrapper.subscribe([&](auto proposal) {});
+  rounds.get_subscriber().on_next(
       OnDemandOrderingGate::RoundSwitch(round, ledger_state));
 
-  auto val = ordering_gate->processProposalRequest(
-      {std::move(arriving_proposal), round});
-  ASSERT_TRUE(val);
+  ASSERT_TRUE(gate_wrapper.validate());
 }
 
 /**
@@ -346,15 +377,15 @@ TEST_F(OnDemandOrderingGateTest, PopNonEmptyBatchesFromTheCache) {
   auto batch1 = createMockBatchWithTransactions({tx1}, "a");
   auto batch2 = createMockBatchWithTransactions({tx2}, "b");
 
-  OnDemandOrderingService::BatchesSetType collection{batch1, batch2};
-  OnDemandOrderingService::BatchesSetType collection2{batch1, batch2};
+  cache::OrderingGateCache::BatchesSetType collection{batch1, batch2};
+  transport::OdOsNotification::BatchesSetType collection2{batch1, batch2};
   EXPECT_CALL(*ordering_service, forCachedBatches(_))
       .WillOnce(InvokeArgument<0>(collection2));
 
   EXPECT_CALL(*notification, onBatches(UnorderedElementsAreArray(collection)))
       .Times(1);
 
-  ordering_gate->processRoundSwitch(
+  rounds.get_subscriber().on_next(
       OnDemandOrderingGate::RoundSwitch(round, ledger_state));
 }
 
@@ -365,10 +396,33 @@ TEST_F(OnDemandOrderingGateTest, PopNonEmptyBatchesFromTheCache) {
  * @then nothing is propagated to the network
  */
 TEST_F(OnDemandOrderingGateTest, PopEmptyBatchesFromTheCache) {
-  OnDemandOrderingService::BatchesSetType empty_collection{};
+  cache::OrderingGateCache::BatchesSetType empty_collection{};
 
   EXPECT_CALL(*notification, onBatches(_)).Times(0);
 
-  ordering_gate->processRoundSwitch(
+  rounds.get_subscriber().on_next(
+      OnDemandOrderingGate::RoundSwitch(round, ledger_state));
+}
+
+/**
+ * @given initialized ordering gate
+ * @when an block round event is received from the PCS
+ * @then all batches from that event are removed from the cache
+ */
+TEST_F(OnDemandOrderingGateTest, BatchesRemoveFromCache) {
+  // prepare hashes for mock batches
+  shared_model::interface::types::HashType hash1("hash1");
+  shared_model::interface::types::HashType hash2("hash2");
+
+  // prepare batches
+  auto batch1 = createMockBatchWithHash(hash1);
+  auto batch2 = createMockBatchWithHash(hash2);
+
+  auto hashes =
+      std::make_shared<ordering::cache::OrderingGateCache::HashesSetType>();
+  hashes->emplace(hash1);
+  hashes->emplace(hash2);
+  processed_tx_hashes.get_subscriber().on_next(hashes);
+  rounds.get_subscriber().on_next(
       OnDemandOrderingGate::RoundSwitch(round, ledger_state));
 }

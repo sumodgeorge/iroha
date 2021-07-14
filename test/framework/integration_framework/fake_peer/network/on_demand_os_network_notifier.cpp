@@ -23,7 +23,7 @@ namespace integration_framework {
           std::make_shared<BatchesCollection>(std::move(batches)));
     }
 
-    std::optional<
+    boost::optional<
         std::shared_ptr<const OnDemandOsNetworkNotifier::ProposalType>>
     OnDemandOsNetworkNotifier::onRequestProposal(
         iroha::consensus::Round round) {
@@ -52,7 +52,7 @@ namespace integration_framework {
         const HashesSetType &hashes) {}
 
     void OnDemandOsNetworkNotifier::forCachedBatches(
-        std::function<void(const iroha::ordering::OnDemandOrderingService::
+        std::function<void(const iroha::ordering::transport::OdOsNotification::
                                BatchesSetType &)> const &f) {}
 
     bool OnDemandOsNetworkNotifier::isEmptyBatchesCache() const {

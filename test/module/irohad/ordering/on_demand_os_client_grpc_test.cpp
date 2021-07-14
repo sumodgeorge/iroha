@@ -54,14 +54,13 @@ class OnDemandOsClientGrpcTest : public ::testing::Test {
     proto_proposal_validator = proto_validator.get();
     proposal_factory = std::make_shared<ProtoProposalTransportFactory>(
         std::move(validator), std::move(proto_validator));
-    client = std::make_shared<OnDemandOsClientGrpc>(
-        std::move(ustub),
-        async_call,
-        proposal_factory,
-        [&] { return timepoint; },
-        timeout,
-        getTestLogger("OdOsClientGrpc"),
-        [this](ProposalEvent event) { received_event = event; });
+    client =
+        std::make_shared<OnDemandOsClientGrpc>(std::move(ustub),
+                                               async_call,
+                                               proposal_factory,
+                                               [&] { return timepoint; },
+                                               timeout,
+                                               getTestLogger("OdOsClientGrpc"));
   }
 
   proto::MockOnDemandOrderingStub *stub;
@@ -70,7 +69,6 @@ class OnDemandOsClientGrpcTest : public ::testing::Test {
   std::chrono::milliseconds timeout{1};
   std::shared_ptr<OnDemandOsClientGrpc> client;
   consensus::Round round{1, 2};
-  ProposalEvent received_event;
 
   MockProposalValidator *proposal_validator;
   MockProtoProposalValidator *proto_proposal_validator;
@@ -138,15 +136,13 @@ TEST_F(OnDemandOsClientGrpcTest, onRequestProposal) {
                       SetArgPointee<2>(response),
                       Return(grpc::Status::OK)));
 
-  client->onRequestProposal(round);
+  auto proposal = client->onRequestProposal(round);
 
   ASSERT_EQ(timepoint + timeout, deadline);
   ASSERT_EQ(request.round().block_round(), round.block_round);
   ASSERT_EQ(request.round().reject_round(), round.reject_round);
-  ASSERT_TRUE(received_event.proposal);
-  ASSERT_EQ(
-      received_event.proposal.value()->transactions()[0].creatorAccountId(),
-      creator);
+  ASSERT_TRUE(proposal);
+  ASSERT_EQ(proposal.value()->transactions()[0].creatorAccountId(), creator);
 }
 
 /**
@@ -166,10 +162,10 @@ TEST_F(OnDemandOsClientGrpcTest, onRequestProposalNone) {
                       SetArgPointee<2>(response),
                       Return(grpc::Status::OK)));
 
-  client->onRequestProposal(round);
+  auto proposal = client->onRequestProposal(round);
 
   ASSERT_EQ(timepoint + timeout, deadline);
   ASSERT_EQ(request.round().block_round(), round.block_round);
   ASSERT_EQ(request.round().reject_round(), round.reject_round);
-  ASSERT_FALSE(received_event.proposal);
+  ASSERT_FALSE(proposal);
 }
