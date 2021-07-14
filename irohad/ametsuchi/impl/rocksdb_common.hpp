@@ -623,14 +623,27 @@ namespace iroha::ametsuchi {
       return status;
     }
 
+    // /// Encode number into @see valueBuffer
+    // auto encode(uint64_t number) {
+    //   valueBuffer().clear();
+    //   fmt::format_to(std::back_inserter(valueBuffer()), kValue, number);
+    // }
+
+    // /// Decode number from @see valueBuffer
+    // auto decode(uint64_t &number) {
+    //   return std::from_chars(valueBuffer().data(),
+    //                          valueBuffer().data() + valueBuffer().size(),
+    //                          number);
+    // }
+
     /// Encode number into @see valueBuffer
-    auto encode(uint64_t number) {
+    auto encode(size_t number) {
       valueBuffer().clear();
       fmt::format_to(std::back_inserter(valueBuffer()), kValue, number);
     }
 
     /// Decode number from @see valueBuffer
-    auto decode(uint64_t &number) {
+    auto decode(size_t &number) {
       return std::from_chars(valueBuffer().data(),
                              valueBuffer().data() + valueBuffer().size(),
                              number);
@@ -878,7 +891,7 @@ namespace iroha::ametsuchi {
     if constexpr (kOp == kDbOperation::kGet) {
       assert(expected::hasValue(status));
       if (status.assumeValue().ok()) {
-        uint64_t _;
+        size_t _;
         common.decode(_);
         value = _;
       }

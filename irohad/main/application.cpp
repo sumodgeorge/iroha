@@ -133,8 +133,8 @@ Irohad::Irohad(
       yac_init(std::make_unique<iroha::consensus::yac::YacInit>()),
       consensus_gate_objects(consensus_gate_objects_lifetime),
       log_manager_(std::move(logger_manager)),
-      log_(log_manager_->getLogger()),
       rdb_opt_(std::move(rdb_opt)),
+      log_(log_manager_->getLogger()),
       subscription_engine_(getSubscription()) {
   log_->info("created");
   // TODO: rework in a more C++11+ - ish way luckychess 29.06.2019 IR-575
