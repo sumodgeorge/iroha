@@ -608,9 +608,9 @@ Irohad::RunResult Irohad::initOrderingGate() {
     return iroha::expected::makeError<std::string>(
         "Failed to create block query");
   }
-  // since delay is 1, it is required to get one more hash from block store in
-  // addition to the top block
-  const size_t kNumBlocks = 2;
+  // since delay is 2, it is required to get two more hashes from block store,
+  // in addition to top block
+  const size_t kNumBlocks = 3;
   auto top_height = (*block_query)->getTopBlockHeight();
   decltype(top_height) block_hashes =
       top_height > kNumBlocks ? kNumBlocks : top_height;
