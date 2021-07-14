@@ -224,9 +224,8 @@ TEST_F(SynchronizerTest, ValidWhenSingleCommitSynchronized) {
 
   auto commit_event = synchronizer->processOutcome(consensus::PairValid(
       consensus::Round{kHeight, 1}, ledger_state, commit_message));
-  ASSERT_TRUE(commit_event);
-  EXPECT_EQ(ledger_peers, commit_event->ledger_state->ledger_peers);
-  ASSERT_EQ(commit_event->sync_outcome, SynchronizationOutcomeType::kCommit);
+  EXPECT_EQ(ledger_peers, commit_event.ledger_state->ledger_peers);
+  ASSERT_EQ(commit_event.sync_outcome, SynchronizationOutcomeType::kCommit);
 }
 
 /**
@@ -248,10 +247,9 @@ TEST_F(SynchronizerTest, ValidWhenValidChain) {
 
   auto commit_event = synchronizer->processOutcome(
       consensus::VoteOther(round, ledger_state, public_keys, hash));
-  ASSERT_TRUE(commit_event);
-  EXPECT_EQ(ledger_peers, commit_event->ledger_state->ledger_peers);
-  ASSERT_EQ(commit_event->sync_outcome, SynchronizationOutcomeType::kCommit);
-  ASSERT_EQ(commit_event->round, round);
+  EXPECT_EQ(ledger_peers, commit_event.ledger_state->ledger_peers);
+  ASSERT_EQ(commit_event.sync_outcome, SynchronizationOutcomeType::kCommit);
+  ASSERT_EQ(commit_event.round, round);
 }
 
 /**
@@ -278,10 +276,9 @@ TEST_F(SynchronizerTest, ValidWhenValidChainMultipleBlocks) {
 
   auto commit_event = synchronizer->processOutcome(consensus::VoteOther(
       consensus::Round{kHeight, 1}, ledger_state, public_keys, hash));
-  ASSERT_TRUE(commit_event);
-  EXPECT_EQ(this->ledger_peers, commit_event->ledger_state->ledger_peers);
-  ASSERT_EQ(commit_event->round.block_round, target_height);
-  ASSERT_EQ(commit_event->sync_outcome, SynchronizationOutcomeType::kCommit);
+  EXPECT_EQ(this->ledger_peers, commit_event.ledger_state->ledger_peers);
+  ASSERT_EQ(commit_event.round.block_round, target_height);
+  ASSERT_EQ(commit_event.sync_outcome, SynchronizationOutcomeType::kCommit);
 }
 
 /**
@@ -307,7 +304,7 @@ TEST_F(SynchronizerTest, ExactlyThreeRetrievals) {
 
   auto commit_event = synchronizer->processOutcome(consensus::VoteOther(
       consensus::Round{kHeight, 1}, ledger_state, public_keys, hash));
-  ASSERT_TRUE(commit_event);
+  ASSERT_NE(SynchronizationOutcomeType::kError, commit_event.sync_outcome);
 }
 
 MATCHER_P(StringEqSharedPtr, ptr, "equals " + *ptr) {
@@ -383,7 +380,7 @@ TEST_F(SynchronizerTest, FailureInMiddleOfChainThenSuccessWithOtherPeer) {
 
   auto commit_event = synchronizer->processOutcome(consensus::Future{
       consensus::Round{kConsensusHeight, 1}, ledger_state, public_keys});
-  ASSERT_TRUE(commit_event);
+  ASSERT_NE(SynchronizationOutcomeType::kError, commit_event.sync_outcome);
 }
 
 /**
@@ -446,7 +443,7 @@ TEST_F(SynchronizerTest, SyncTillMiddleOfChainThenSuccessWithOtherPeer) {
 
   auto commit_event = synchronizer->processOutcome(consensus::Future{
       consensus::Round{kConsensusHeight, 1}, ledger_state, public_keys});
-  ASSERT_TRUE(commit_event);
+  ASSERT_NE(SynchronizationOutcomeType::kError, commit_event.sync_outcome);
 }
 
 /**
@@ -504,7 +501,7 @@ TEST_F(SynchronizerTest, AbruptInMiddleOfChainThenSuccessWithSamePeer) {
 
   auto commit_event = synchronizer->processOutcome(consensus::Future{
       consensus::Round{kConsensusHeight, 1}, ledger_state, public_keys});
-  ASSERT_TRUE(commit_event);
+  ASSERT_NE(SynchronizationOutcomeType::kError, commit_event.sync_outcome);
 }
 
 /**
@@ -527,7 +524,7 @@ TEST_F(SynchronizerTest, RetrieveBlockSeveralFailures) {
 
   auto commit_event = synchronizer->processOutcome(consensus::VoteOther(
       consensus::Round{kHeight, 1}, ledger_state, public_keys, hash));
-  ASSERT_FALSE(commit_event);
+  ASSERT_EQ(SynchronizationOutcomeType::kError, commit_event.sync_outcome);
 }
 
 /**
@@ -541,8 +538,7 @@ TEST_F(SynchronizerTest, ProposalRejectOutcome) {
 
   auto commit_event = synchronizer->processOutcome(consensus::ProposalReject(
       consensus::Round{kHeight, 1}, ledger_state, public_keys));
-  ASSERT_TRUE(commit_event);
-  ASSERT_EQ(commit_event->sync_outcome, SynchronizationOutcomeType::kReject);
+  ASSERT_EQ(commit_event.sync_outcome, SynchronizationOutcomeType::kReject);
 }
 
 /**
@@ -556,8 +552,7 @@ TEST_F(SynchronizerTest, BlockRejectOutcome) {
 
   auto commit_event = synchronizer->processOutcome(consensus::BlockReject(
       consensus::Round{kHeight, 1}, ledger_state, public_keys));
-  ASSERT_TRUE(commit_event);
-  ASSERT_EQ(commit_event->sync_outcome, SynchronizationOutcomeType::kReject);
+  ASSERT_EQ(commit_event.sync_outcome, SynchronizationOutcomeType::kReject);
 }
 
 /**
@@ -571,8 +566,7 @@ TEST_F(SynchronizerTest, NoneOutcome) {
 
   auto commit_event = synchronizer->processOutcome(consensus::AgreementOnNone(
       consensus::Round{kHeight, 1}, ledger_state, public_keys));
-  ASSERT_TRUE(commit_event);
-  ASSERT_EQ(commit_event->sync_outcome, SynchronizationOutcomeType::kNothing);
+  ASSERT_EQ(commit_event.sync_outcome, SynchronizationOutcomeType::kNothing);
 }
 
 /**
@@ -594,9 +588,8 @@ TEST_F(SynchronizerTest, VotedForBlockCommitPrepared) {
 
   auto commit_event = synchronizer->processOutcome(consensus::PairValid(
       consensus::Round{kHeight, 1}, ledger_state, commit_message));
-  ASSERT_TRUE(commit_event);
-  EXPECT_EQ(this->ledger_peers, commit_event->ledger_state->ledger_peers);
-  ASSERT_EQ(commit_event->sync_outcome, SynchronizationOutcomeType::kCommit);
+  EXPECT_EQ(this->ledger_peers, commit_event.ledger_state->ledger_peers);
+  ASSERT_EQ(commit_event.sync_outcome, SynchronizationOutcomeType::kCommit);
 }
 
 /**
@@ -621,8 +614,7 @@ TEST_F(SynchronizerTest, VotedForOtherCommitPrepared) {
 
   auto commit_event = synchronizer->processOutcome(consensus::VoteOther(
       consensus::Round{kHeight, 1}, ledger_state, public_keys, hash));
-  ASSERT_TRUE(commit_event);
-  ASSERT_EQ(commit_event->sync_outcome, SynchronizationOutcomeType::kCommit);
+  ASSERT_EQ(commit_event.sync_outcome, SynchronizationOutcomeType::kCommit);
 }
 
 /**
@@ -643,8 +635,7 @@ TEST_F(SynchronizerTest, VotedForThisCommitPreparedFailure) {
 
   auto commit_event = synchronizer->processOutcome(consensus::PairValid(
       consensus::Round{kHeight, 1}, ledger_state, commit_message));
-  ASSERT_TRUE(commit_event);
-  ASSERT_EQ(commit_event->sync_outcome, SynchronizationOutcomeType::kCommit);
+  ASSERT_EQ(commit_event.sync_outcome, SynchronizationOutcomeType::kCommit);
 }
 
 /**
@@ -664,7 +655,7 @@ TEST_F(SynchronizerTest, CommitFailureVoteSameBlock) {
 
   auto commit_event = synchronizer->processOutcome(consensus::PairValid(
       consensus::Round{kHeight, 1}, ledger_state, commit_message));
-  ASSERT_FALSE(commit_event);
+  ASSERT_EQ(SynchronizationOutcomeType::kError, commit_event.sync_outcome);
 }
 
 /**
@@ -687,7 +678,7 @@ TEST_F(SynchronizerTest, CommitFailureVoteOther) {
 
   auto commit_event = synchronizer->processOutcome(consensus::VoteOther(
       consensus::Round{kHeight, 1}, ledger_state, public_keys, hash));
-  ASSERT_FALSE(commit_event);
+  ASSERT_EQ(SynchronizationOutcomeType::kError, commit_event.sync_outcome);
 }
 
 /**
@@ -709,8 +700,7 @@ TEST_F(SynchronizerTest, OneRoundDifference) {
   consensus::Round expected_round{commit_message->height(), 0};
   auto commit_event = synchronizer->processOutcome(consensus::Future(
       consensus::Round{kHeight + 1, 1}, ledger_state, public_keys));
-  ASSERT_TRUE(commit_event);
-  EXPECT_EQ(this->ledger_peers, commit_event->ledger_state->ledger_peers);
-  ASSERT_EQ(commit_event->sync_outcome, SynchronizationOutcomeType::kCommit);
-  ASSERT_EQ(commit_event->round, expected_round);
+  EXPECT_EQ(this->ledger_peers, commit_event.ledger_state->ledger_peers);
+  ASSERT_EQ(commit_event.sync_outcome, SynchronizationOutcomeType::kCommit);
+  ASSERT_EQ(commit_event.round, expected_round);
 }

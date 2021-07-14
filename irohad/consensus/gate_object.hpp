@@ -6,8 +6,7 @@
 #ifndef CONSENSUS_GATE_OBJECT_HPP
 #define CONSENSUS_GATE_OBJECT_HPP
 
-#include <variant>
-
+#include <boost/variant.hpp>
 #include "ametsuchi/ledger_state.hpp"
 #include "consensus/round.hpp"
 #include "cryptography/hash.hpp"
@@ -88,14 +87,21 @@ namespace iroha {
       using Synchronizable::Synchronizable;
     };
 
-    using GateObject = std::variant<PairValid,
-                                    VoteOther,
-                                    ProposalReject,
-                                    BlockReject,
-                                    AgreementOnNone,
-                                    Future>;
+    using GateObject = boost::variant<PairValid,
+                                      VoteOther,
+                                      ProposalReject,
+                                      BlockReject,
+                                      AgreementOnNone,
+                                      Future>;
 
   }  // namespace consensus
 }  // namespace iroha
+
+extern template class boost::variant<iroha::consensus::PairValid,
+                                     iroha::consensus::VoteOther,
+                                     iroha::consensus::ProposalReject,
+                                     iroha::consensus::BlockReject,
+                                     iroha::consensus::AgreementOnNone,
+                                     iroha::consensus::Future>;
 
 #endif  // CONSENSUS_GATE_OBJECT_HPP

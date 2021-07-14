@@ -11,4 +11,5 @@ target_link_libraries(synchronizer
     ametsuchi
     rxcpp
     logger
+    gate_object
     )
