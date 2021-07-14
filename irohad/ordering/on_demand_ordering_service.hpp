@@ -27,8 +27,6 @@ namespace iroha {
      */
     class OnDemandOrderingService {
      public:
-      virtual ~OnDemandOrderingService() = default;
-
       /**
        * Type of stored proposals
        */
