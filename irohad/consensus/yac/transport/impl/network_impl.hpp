@@ -17,48 +17,53 @@
 #include "network/impl/async_grpc_client.hpp"
 #include "network/impl/client_factory.hpp"
 
-namespace iroha::consensus::yac {
-  /**
-   * Class which provides implementation of client-side transport for
-   * consensus based on grpc
-   */
-  class NetworkImpl : public YacNetwork {
-   public:
-    using Service = proto::Yac;
-    using ClientFactory = iroha::network::ClientFactory<Service>;
+namespace iroha {
+  namespace consensus {
+    namespace yac {
 
-    NetworkImpl(
+      /**
+       * Class which provides implementation of client-side transport for
+       * consensus based on grpc
+       */
+      class NetworkImpl : public YacNetwork {
+       public:
+        using Service = proto::Yac;
+        using ClientFactory = iroha::network::ClientFactory<Service>;
+
+        NetworkImpl(
+            std::shared_ptr<network::AsyncGrpcClient<google::protobuf::Empty>>
+                async_call,
+            std::unique_ptr<iroha::network::ClientFactory<
+                ::iroha::consensus::yac::proto::Yac>> client_factory,
+            logger::LoggerPtr log);
+
+        void sendState(const shared_model::interface::Peer &to,
+                       const std::vector<VoteMessage> &state) override;
+
+        void stop() override;
+
+       private:
+        std::function<void(std::vector<VoteMessage>)> callback_;
+
+        /**
+         * Rpc call to provide an ability to perform call grpc endpoints
+         */
         std::shared_ptr<network::AsyncGrpcClient<google::protobuf::Empty>>
-            async_call,
-        std::unique_ptr<
-            iroha::network::ClientFactory<::iroha::consensus::yac::proto::Yac>>
-            client_factory,
-        logger::LoggerPtr log);
+            async_call_;
 
-    void sendState(const shared_model::interface::Peer &to,
-                   const std::vector<VoteMessage> &state) override;
+        /**
+         * Yac stub creator
+         */
+        std::unique_ptr<ClientFactory> client_factory_;
 
-    void stop() override;
+        std::mutex stop_mutex_;
+        bool stop_requested_{false};
 
-   private:
-    std::function<void(std::vector<VoteMessage>)> callback_;
+        logger::LoggerPtr log_;
+      };
 
-    /**
-     * Rpc call to provide an ability to perform call grpc endpoints
-     */
-    std::shared_ptr<network::AsyncGrpcClient<google::protobuf::Empty>>
-        async_call_;
-
-    /**
-     * Yac stub creator
-     */
-    std::unique_ptr<ClientFactory> client_factory_;
-
-    std::mutex stop_mutex_;
-    bool stop_requested_{false};
-
-    logger::LoggerPtr log_;
-  };
-}  // namespace iroha::consensus::yac
+    }  // namespace yac
+  }    // namespace consensus
+}  // namespace iroha
 
 #endif  // IROHA_NETWORK_IMPL_HPP

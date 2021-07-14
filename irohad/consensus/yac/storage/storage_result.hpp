@@ -8,16 +8,21 @@
 
 #include <boost/variant.hpp>
 
-namespace iroha::consensus::yac {
-  struct CommitMessage;
-  struct RejectMessage;
-  struct FutureMessage;
+namespace iroha {
+  namespace consensus {
+    namespace yac {
 
-  /**
-   * Contains proof of supermajority for all purposes;
-   */
-  using Answer = boost::variant<CommitMessage, RejectMessage, FutureMessage>;
+      struct CommitMessage;
+      struct RejectMessage;
+      struct FutureMessage;
 
-}  // namespace iroha::consensus::yac
+      /**
+       * Contains proof of supermajority for all purposes;
+       */
+      using Answer =
+          boost::variant<CommitMessage, RejectMessage, FutureMessage>;
 
+    }  // namespace yac
+  }    // namespace consensus
+}  // namespace iroha
 #endif  // IROHA_STORAGE_RESULT_HPP

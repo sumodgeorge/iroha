@@ -7,13 +7,19 @@
 
 #include "main/subscription.hpp"
 
-using iroha::consensus::yac::TimerImpl;
+namespace iroha {
+  namespace consensus {
+    namespace yac {
+      TimerImpl::TimerImpl(std::chrono::milliseconds delay_milliseconds)
+          : delay_milliseconds_(delay_milliseconds) {}
 
-TimerImpl::TimerImpl(std::chrono::milliseconds delay_milliseconds)
-    : delay_milliseconds_(delay_milliseconds) {}
+      void TimerImpl::invokeAfterDelay(std::function<void()> handler) {
+        getSubscription()->dispatcher()->addDelayed(
+            SubscriptionEngineHandlers::kYac,
+            delay_milliseconds_,
+            std::move(handler));
+      }
 
-void TimerImpl::invokeAfterDelay(std::function<void()> handler) {
-  getSubscription()->dispatcher()->addDelayed(SubscriptionEngineHandlers::kYac,
-                                              delay_milliseconds_,
-                                              std::move(handler));
-}
+    }  // namespace yac
+  }    // namespace consensus
+}  // namespace iroha

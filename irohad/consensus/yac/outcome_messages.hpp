@@ -11,68 +11,73 @@
 #include "consensus/yac/vote_message.hpp"
 #include "utils/string_builder.hpp"
 
-namespace iroha::consensus::yac {
-  template <typename>
-  struct OutcomeMessage {
-    explicit OutcomeMessage(std::vector<VoteMessage> votes)
-        : votes(std::move(votes)) {}
+namespace iroha {
+  namespace consensus {
+    namespace yac {
 
-    OutcomeMessage(std::initializer_list<VoteMessage> votes) : votes(votes) {}
+      template <typename>
+      struct OutcomeMessage {
+        explicit OutcomeMessage(std::vector<VoteMessage> votes)
+            : votes(std::move(votes)) {}
 
-    std::vector<VoteMessage> votes;
+        OutcomeMessage(std::initializer_list<VoteMessage> votes)
+            : votes(votes) {}
 
-    bool operator==(const OutcomeMessage &rhs) const {
-      return votes == rhs.votes;
-    }
+        std::vector<VoteMessage> votes;
 
-    std::string toString() const {
-      return shared_model::detail::PrettyStringBuilder()
-          .init(typeName())
-          .appendNamed("votes", votes)
-          .finalize();
-    }
+        bool operator==(const OutcomeMessage &rhs) const {
+          return votes == rhs.votes;
+        }
 
-    virtual const std::string &typeName() const = 0;
+        std::string toString() const {
+          return shared_model::detail::PrettyStringBuilder()
+              .init(typeName())
+              .appendNamed("votes", votes)
+              .finalize();
+        }
 
-   protected:
-    ~OutcomeMessage() = default;
-  };
+        virtual const std::string &typeName() const = 0;
 
-  /**
-   * CommitMsg means consensus on cluster achieved.
-   * All nodes deals on some solution
-   */
-  struct CommitMessage final : OutcomeMessage<CommitMessage> {
-    using OutcomeMessage::OutcomeMessage;
-    const std::string &typeName() const override {
-      const static std::string name{"CommitMessage"};
-      return name;
-    }
-  };
+       protected:
+        ~OutcomeMessage() = default;
+      };
 
-  /**
-   * Reject means that there is impossible
-   * to collect supermajority for any block
-   */
-  struct RejectMessage final : OutcomeMessage<RejectMessage> {
-    using OutcomeMessage::OutcomeMessage;
-    const std::string &typeName() const override {
-      const static std::string name{"RejectMessage"};
-      return name;
-    }
-  };
+      /**
+       * CommitMsg means consensus on cluster achieved.
+       * All nodes deals on some solution
+       */
+      struct CommitMessage final : OutcomeMessage<CommitMessage> {
+        using OutcomeMessage::OutcomeMessage;
+        const std::string &typeName() const override {
+          const static std::string name{"CommitMessage"};
+          return name;
+        }
+      };
 
-  /**
-   * Represents the case when the round number is greater than the current,
-   * and the quorum is unknown
-   */
-  struct FutureMessage final : OutcomeMessage<FutureMessage> {
-    using OutcomeMessage::OutcomeMessage;
-    const std::string &typeName() const override {
-      const static std::string name{"FutureMessage"};
-      return name;
-    }
-  };
-}  // namespace iroha::consensus::yac
+      /**
+       * Reject means that there is impossible
+       * to collect supermajority for any block
+       */
+      struct RejectMessage final : OutcomeMessage<RejectMessage> {
+        using OutcomeMessage::OutcomeMessage;
+        const std::string &typeName() const override {
+          const static std::string name{"RejectMessage"};
+          return name;
+        }
+      };
 
+      /**
+       * Represents the case when the round number is greater than the current,
+       * and the quorum is unknown
+       */
+      struct FutureMessage final : OutcomeMessage<FutureMessage> {
+        using OutcomeMessage::OutcomeMessage;
+        const std::string &typeName() const override {
+          const static std::string name{"FutureMessage"};
+          return name;
+        }
+      };
+    }  // namespace yac
+  }    // namespace consensus
+}  // namespace iroha
 #endif  // IROHA_MESSAGES_HPP

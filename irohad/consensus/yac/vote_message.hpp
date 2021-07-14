@@ -12,30 +12,36 @@
 #include "interfaces/common_objects/signature.hpp"
 #include "utils/string_builder.hpp"
 
-namespace iroha::consensus::yac {
-  /**
-   * VoteMessage represents voting for some block;
-   */
-  struct VoteMessage {
-    YacHash hash;
-    std::shared_ptr<shared_model::interface::Signature> signature;
+namespace iroha {
+  namespace consensus {
+    namespace yac {
 
-    bool operator==(const VoteMessage &rhs) const {
-      return hash == rhs.hash and *signature == *rhs.signature;
-    }
+      /**
+       * VoteMessage represents voting for some block;
+       */
+      struct VoteMessage {
+        YacHash hash;
+        std::shared_ptr<shared_model::interface::Signature> signature;
 
-    bool operator!=(const VoteMessage &rhs) const {
-      return not(*this == rhs);
-    }
+        bool operator==(const VoteMessage &rhs) const {
+          return hash == rhs.hash and *signature == *rhs.signature;
+        }
 
-    std::string toString() const {
-      return shared_model::detail::PrettyStringBuilder()
-          .init("VoteMessage")
-          .appendNamed("yac hash", hash)
-          .appendNamed("signature", signature)
-          .finalize();
-    }
-  };
-}  // namespace iroha::consensus::yac
+        bool operator!=(const VoteMessage &rhs) const {
+          return not(*this == rhs);
+        }
+
+        std::string toString() const {
+          return shared_model::detail::PrettyStringBuilder()
+              .init("VoteMessage")
+              .appendNamed("yac hash", hash)
+              .appendNamed("signature", signature)
+              .finalize();
+        }
+      };
+
+    }  // namespace yac
+  }    // namespace consensus
+}  // namespace iroha
 
 #endif  // IROHA_VOTE_MESSAGE_HPP

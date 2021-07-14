@@ -7,10 +7,11 @@
 
 #include "common/visitor.hpp"
 
-using iroha::consensus::yac::BufferedCleanupStrategy;
+using namespace iroha::consensus;
+using namespace iroha::consensus::yac;
 
-boost::optional<iroha::consensus::yac::CleanupStrategy::RoundsType>
-BufferedCleanupStrategy::finalize(RoundType consensus_round, Answer answer) {
+boost::optional<CleanupStrategy::RoundsType> BufferedCleanupStrategy::finalize(
+    RoundType consensus_round, Answer answer) {
   using OptRefRoundType = boost::optional<RoundType> &;
   auto &target_round = iroha::visit_in_place(
       answer,
@@ -37,8 +38,7 @@ BufferedCleanupStrategy::finalize(RoundType consensus_round, Answer answer) {
   }
 }
 
-iroha::consensus::yac::CleanupStrategy::RoundsType
-BufferedCleanupStrategy::truncateCreatedRounds() {
+CleanupStrategy::RoundsType BufferedCleanupStrategy::truncateCreatedRounds() {
   CleanupStrategy::RoundsType removed;
   if (last_commit_round_) {
     while (*last_commit_round_ > created_rounds_.top()) {

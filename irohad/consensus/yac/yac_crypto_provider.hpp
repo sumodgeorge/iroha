@@ -8,27 +8,33 @@
 
 #include "consensus/yac/yac_hash_provider.hpp"  // for YacHash (passed by copy)
 
-namespace iroha::consensus::yac {
-  struct VoteMessage;
+namespace iroha {
+  namespace consensus {
+    namespace yac {
 
-  class YacCryptoProvider {
-   public:
-    /**
-     * Verify signatory of message
-     * @param msg - for verification
-     * @return true if signature correct
-     */
-    virtual bool verify(const std::vector<VoteMessage> &msg) = 0;
+      struct VoteMessage;
 
-    /**
-     * Generate vote for provided hash;
-     * @param hash - hash for signing
-     * @return vote
-     */
-    virtual VoteMessage getVote(YacHash hash) = 0;
+      class YacCryptoProvider {
+       public:
+        /**
+         * Verify signatory of message
+         * @param msg - for verification
+         * @return true if signature correct
+         */
+        virtual bool verify(const std::vector<VoteMessage> &msg) = 0;
 
-    virtual ~YacCryptoProvider() = default;
-  };
-}  // namespace iroha::consensus::yac
+        /**
+         * Generate vote for provided hash;
+         * @param hash - hash for signing
+         * @return vote
+         */
+        virtual VoteMessage getVote(YacHash hash) = 0;
+
+        virtual ~YacCryptoProvider() = default;
+      };
+
+    }  // namespace yac
+  }    // namespace consensus
+}  // namespace iroha
 
 #endif  // IROHA_YAC_CRYPTO_PROVIDER_HPP

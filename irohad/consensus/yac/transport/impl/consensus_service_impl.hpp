@@ -13,32 +13,39 @@
 #include "consensus/yac/vote_message.hpp"
 #include "logger/logger_fwd.hpp"
 
-namespace iroha::consensus::yac {
-  /**
-   * Class which provides implementation of server-side transport for
-   * consensus based on grpc
-   */
-  class ServiceImpl : public proto::Yac::Service {
-   public:
-    using Service = proto::Yac;
+namespace iroha {
+  namespace consensus {
+    namespace yac {
 
-    ServiceImpl(logger::LoggerPtr log,
-                std::function<void(std::vector<VoteMessage>)> callback);
+      /**
+       * Class which provides implementation of server-side transport for
+       * consensus based on grpc
+       */
+      class ServiceImpl : public proto::Yac::Service {
+       public:
+        using Service = proto::Yac;
 
-    /**
-     * Receive votes from another peer;
-     * Naming is confusing, because this is rpc call that
-     * perform on another machine;
-     */
-    grpc::Status SendState(::grpc::ServerContext *context,
-                           const ::iroha::consensus::yac::proto::State *request,
-                           ::google::protobuf::Empty *response) override;
+        ServiceImpl(logger::LoggerPtr log,
+                    std::function<void(std::vector<VoteMessage>)> callback);
 
-   private:
-    std::function<void(std::vector<VoteMessage>)> callback_;
+        /**
+         * Receive votes from another peer;
+         * Naming is confusing, because this is rpc call that
+         * perform on another machine;
+         */
+        grpc::Status SendState(
+            ::grpc::ServerContext *context,
+            const ::iroha::consensus::yac::proto::State *request,
+            ::google::protobuf::Empty *response) override;
 
-    logger::LoggerPtr log_;
-  };
-}  // namespace iroha::consensus::yac
+       private:
+        std::function<void(std::vector<VoteMessage>)> callback_;
+
+        logger::LoggerPtr log_;
+      };
+
+    }  // namespace yac
+  }    // namespace consensus
+}  // namespace iroha
 
 #endif  // IROHA_YAC_SERVICE_IMPL_HPP

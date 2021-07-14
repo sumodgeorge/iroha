@@ -8,9 +8,15 @@
 
 #include <cstddef>
 
-namespace iroha::consensus::yac {
-  /// Type for number of peers in round.
-  using PeersNumberType = size_t;
-}  // namespace iroha::consensus::yac
+namespace iroha {
+  namespace consensus {
+    namespace yac {
+
+      /// Type for number of peers in round.
+      using PeersNumberType = size_t;
+
+    }  // namespace yac
+  }    // namespace consensus
+}  // namespace iroha
 
 #endif  // IROHA_YAC_TYPES_HPP

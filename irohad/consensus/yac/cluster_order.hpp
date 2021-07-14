@@ -13,70 +13,74 @@
 #include "consensus/yac/yac_types.hpp"
 #include "interfaces/common_objects/types.hpp"
 
-namespace iroha::consensus::yac {
-  /**
-   * Class provide ordering on cluster for current round
-   */
-  class ClusterOrdering {
-   public:
-    /**
-     * Creates cluster ordering from the vector of peers and peer positions
-     * @param order vector of peers
-     * @param peer_positions vector of indexes of peer positions
-     * @return ClusterOrdering if vectors are not empty, null otherwise
-     */
-    static boost::optional<ClusterOrdering> create(
-        std::vector<std::shared_ptr<shared_model::interface::Peer>> const
-            &order,
-        std::vector<size_t> const &peer_positions);
+namespace iroha {
+  namespace consensus {
+    namespace yac {
 
-    /**
-     * Creates cluster ordering from the vector of peers
-     * @param order vector of peers
-     * @return ClusterOrdering if vectors are not empty, null otherwise
-     */
-    static boost::optional<ClusterOrdering> create(
-        std::vector<std::shared_ptr<shared_model::interface::Peer>> const
-            &order);
+      /**
+       * Class provide ordering on cluster for current round
+       */
+      class ClusterOrdering {
+       public:
+        /**
+         * Creates cluster ordering from the vector of peers and peer positions
+         * @param order vector of peers
+         * @param peer_positions vector of indexes of peer positions
+         * @return ClusterOrdering if vectors are not empty, null otherwise
+         */
+        static boost::optional<ClusterOrdering> create(
+            std::vector<std::shared_ptr<shared_model::interface::Peer>> const
+                &order,
+            std::vector<size_t> const &peer_positions);
 
-    /**
-     * Provide current leader peer
-     */
-    const shared_model::interface::Peer &currentLeader();
+        /**
+         * Creates cluster ordering from the vector of peers
+         * @param order vector of peers
+         * @return ClusterOrdering if vectors are not empty, null otherwise
+         */
+        static boost::optional<ClusterOrdering> create(
+            std::vector<std::shared_ptr<shared_model::interface::Peer>> const
+                &order);
 
-    /**
-     * Switch to next peer as leader
-     * @return this
-     */
-    ClusterOrdering &switchToNext();
+        /**
+         * Provide current leader peer
+         */
+        const shared_model::interface::Peer &currentLeader();
 
-    /**
-     * @return true if current leader not last peer in order
-     */
-    bool hasNext() const;
+        /**
+         * Switch to next peer as leader
+         * @return this
+         */
+        ClusterOrdering &switchToNext();
 
-    const shared_model::interface::types::PeerList &getPeers() const;
+        /**
+         * @return true if current leader not last peer in order
+         */
+        bool hasNext() const;
 
-    PeersNumberType getNumberOfPeers() const;
+        const shared_model::interface::types::PeerList &getPeers() const;
 
-    virtual ~ClusterOrdering() = default;
+        PeersNumberType getNumberOfPeers() const;
 
-    ClusterOrdering() = delete;
+        virtual ~ClusterOrdering() = default;
 
-   private:
-    // prohibit creation of the object not from create method
-    explicit ClusterOrdering(
-        std::vector<std::shared_ptr<shared_model::interface::Peer>> const
-            &order,
-        std::vector<size_t> const &peer_positions);
+        ClusterOrdering() = delete;
 
-    explicit ClusterOrdering(
-        std::vector<std::shared_ptr<shared_model::interface::Peer>> const
-            &order);
+       private:
+        // prohibit creation of the object not from create method
+        explicit ClusterOrdering(
+            std::vector<std::shared_ptr<shared_model::interface::Peer>> const
+                &order,
+            std::vector<size_t> const &peer_positions);
 
-    std::vector<std::shared_ptr<shared_model::interface::Peer>> order_;
-    PeersNumberType index_ = 0;
-  };
-}  // namespace iroha::consensus::yac
+        explicit ClusterOrdering(
+            std::vector<std::shared_ptr<shared_model::interface::Peer>> const
+                &order);
 
+        std::vector<std::shared_ptr<shared_model::interface::Peer>> order_;
+        PeersNumberType index_ = 0;
+      };
+    }  // namespace yac
+  }    // namespace consensus
+}  // namespace iroha
 #endif  // IROHA_CLUSTER_ORDER_HPP

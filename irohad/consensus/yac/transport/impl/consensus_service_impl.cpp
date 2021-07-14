@@ -7,7 +7,7 @@
 
 #include "consensus/yac/transport/yac_pb_converters.hpp"
 
-using iroha::consensus::yac::ServiceImpl;
+using namespace iroha::consensus::yac;
 
 ServiceImpl::ServiceImpl(logger::LoggerPtr log,
                          std::function<void(std::vector<VoteMessage>)> callback)
