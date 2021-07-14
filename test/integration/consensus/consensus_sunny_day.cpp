@@ -15,7 +15,6 @@
 #include "consensus/yac/transport/impl/consensus_service_impl.hpp"
 #include "consensus/yac/transport/impl/network_impl.hpp"
 #include "consensus/yac/yac.hpp"
-#include "main/subscription.hpp"
 #include "module/shared_model/cryptography/crypto_defaults.hpp"
 
 #include "framework/stateless_valid_field_helpers.hpp"
@@ -46,7 +45,6 @@ auto mk_local_peer(uint64_t num) {
 
 class ConsensusSunnyDayTest : public ::testing::Test {
  public:
-  std::shared_ptr<iroha::Subscription> subscription;
   std::shared_ptr<CleanupStrategy> cleanup_strategy;
   std::unique_ptr<grpc::Server> server;
   std::shared_ptr<NetworkImpl> network;
@@ -72,7 +70,6 @@ class ConsensusSunnyDayTest : public ::testing::Test {
   }
 
   void SetUp() override {
-    subscription = iroha::getSubscription();
     cleanup_strategy =
         std::make_shared<iroha::consensus::yac::BufferedCleanupStrategy>();
     auto async_call = std::make_shared<
@@ -128,7 +125,6 @@ class ConsensusSunnyDayTest : public ::testing::Test {
 
   void TearDown() override {
     server->Shutdown();
-    subscription->dispose();
   }
 
   uint64_t delay_before, delay_after;

@@ -8,8 +8,8 @@
 
 #include "ordering/on_demand_os_transport.hpp"
 
-#include <array>
 #include <atomic>
+#include <array>
 #include <shared_mutex>
 
 #include "logger/logger_fwd.hpp"
