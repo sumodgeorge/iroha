@@ -100,6 +100,7 @@ namespace iroha {
               async_call,
           ConsistencyModel consistency_model,
           const logger::LoggerManagerTreePtr &consensus_log_manager,
+          std::chrono::milliseconds delay,
           std::shared_ptr<iroha::network::GenericClientFactory>
               client_factory) {
         auto peer_orderer = createPeerOrderer(peer_query_factory);
@@ -135,7 +136,8 @@ namespace iroha {
             std::move(ledger_state),
             hash_provider,
             std::move(consensus_result_cache),
-            consensus_log_manager->getChild("Gate")->getLogger());
+            consensus_log_manager->getChild("Gate")->getLogger(),
+            ConsensusOutcomeDelay(delay));
       }
     }  // namespace yac
   }    // namespace consensus

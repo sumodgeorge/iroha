@@ -156,8 +156,7 @@ namespace integration_framework {
           transaction_factory_,
           batch_parser_,
           transaction_batch_factory_,
-          ordering_log_manager_->getChild("Transport")->getLogger(),
-          std::chrono::seconds(0));
+          ordering_log_manager_->getChild("Transport")->getLogger());
 
       initialized_ = true;
       return *this;

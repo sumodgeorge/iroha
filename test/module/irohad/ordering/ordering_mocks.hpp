@@ -50,7 +50,6 @@ namespace iroha {
           void(std::function<
                void(const transport::OdOsNotification::BatchesSetType &)> const
                    &));
-      MOCK_METHOD(bool, isEmptyBatchesCache, (), (const override));
     };
 
   }  // namespace ordering

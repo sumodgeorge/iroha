@@ -118,7 +118,7 @@ namespace iroha {
       void removeFromBatchesCache(
           const OnDemandOrderingService::HashesSetType &hashes);
 
-      bool isEmptyBatchesCache() const override;
+      bool isEmptyBatchesCache() const;
 
       void forCachedBatches(
           std::function<void(const transport::OdOsNotification::BatchesSetType

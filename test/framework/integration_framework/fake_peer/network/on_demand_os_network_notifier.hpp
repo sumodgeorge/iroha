@@ -12,31 +12,20 @@
 
 #include "consensus/round.hpp"
 #include "framework/integration_framework/fake_peer/types.hpp"
-#include "ordering/on_demand_ordering_service.hpp"
+#include "ordering/on_demand_os_transport.hpp"
 
 namespace integration_framework {
   namespace fake_peer {
 
     class OnDemandOsNetworkNotifier final
-        : public iroha::ordering::OnDemandOrderingService {
+        : public iroha::ordering::transport::OdOsNotification {
      public:
       OnDemandOsNetworkNotifier(const std::shared_ptr<FakePeer> &fake_peer);
 
-      void onBatches(CollectionType batches) override;
+      virtual void onBatches(CollectionType batches);
 
-      boost::optional<std::shared_ptr<const ProposalType>> onRequestProposal(
-          iroha::consensus::Round round) override;
-
-      void onCollaborationOutcome(iroha::consensus::Round round) override;
-
-      void onTxsCommitted(const HashesSetType &hashes) override;
-
-      void forCachedBatches(
-          std::function<void(
-              const iroha::ordering::transport::OdOsNotification::BatchesSetType
-                  &)> const &f) override;
-
-      bool isEmptyBatchesCache() const override;
+      virtual boost::optional<std::shared_ptr<const ProposalType>>
+      onRequestProposal(iroha::consensus::Round round);
 
       rxcpp::observable<iroha::consensus::Round>
       getProposalRequestsObservable();

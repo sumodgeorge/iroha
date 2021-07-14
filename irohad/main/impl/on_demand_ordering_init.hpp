@@ -167,8 +167,7 @@ namespace iroha {
           std::shared_ptr<ametsuchi::TxPresenceCache> tx_cache,
           std::shared_ptr<ProposalCreationStrategy> creation_strategy,
           logger::LoggerManagerTreePtr ordering_log_manager,
-          std::shared_ptr<iroha::network::GenericClientFactory> client_factory,
-          std::chrono::milliseconds proposal_creation_timeout);
+          std::shared_ptr<iroha::network::GenericClientFactory> client_factory);
 
       /// gRPC service for ordering service
       std::shared_ptr<grpc::Service> service;

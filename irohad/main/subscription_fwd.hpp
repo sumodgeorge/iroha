@@ -36,7 +36,6 @@ namespace iroha {
     kOnApplyState,
     kOnNeedProposal,
     kOnNewProposal,
-    kOnNewBatchInCache,
 
     // MST
     kOnStateUpdate,

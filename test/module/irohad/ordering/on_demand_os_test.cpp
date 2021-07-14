@@ -225,6 +225,7 @@ TEST_F(OnDemandOsTest, UseFactoryForProposal) {
       proposal_limit);
 
   EXPECT_CALL(*mock_factory, unsafeCreateProposal(_, _, _))
+      .WillOnce(Return(ByMove(makeMockProposal())))
       .WillOnce(Return(ByMove(makeMockProposal())));
 
   generateTransactionsAndInsert({1, 2});

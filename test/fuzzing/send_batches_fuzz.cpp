@@ -41,8 +41,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, std::size_t size) {
                                              fixture.transaction_factory_,
                                              fixture.batch_parser_,
                                              fixture.transaction_batch_factory_,
-                                             logger::getDummyLoggerPtr(),
-                                             std::chrono::seconds(0));
+                                             logger::getDummyLoggerPtr());
 
   proto::BatchesRequest request;
   if (protobuf_mutator::libfuzzer::LoadProtoInput(
