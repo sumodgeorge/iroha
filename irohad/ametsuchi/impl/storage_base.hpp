@@ -61,7 +61,7 @@ namespace iroha {
       std::string prepared_block_name_;
 
      protected:
-      CommitResult commitPrepared(
+      CommitResult commitPreparedImpl(
           std::shared_ptr<const shared_model::interface::Block> block,
           DatabaseTransaction &db_context,
           WsvCommand &wsv_command,
@@ -158,7 +158,7 @@ namespace iroha {
       rxcpp::observable<std::shared_ptr<const shared_model::interface::Block>>
       on_commit() override;
 
-      void prepareBlock(std::unique_ptr<TemporaryWsv> wsv,
+      void prepareBlockImpl(std::unique_ptr<TemporaryWsv> wsv,
                         DatabaseTransaction &db_context);
 
       /**

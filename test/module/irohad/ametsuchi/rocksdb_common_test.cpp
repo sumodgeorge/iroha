@@ -173,7 +173,7 @@ TEST_F(RocksDBTest, NumberRewrite) {
     ASSERT_TRUE(common.put("{}", "123").ok());
     ASSERT_TRUE(common.commit().ok());
   }
-  uint64_t value;
+  size_t value;
   {
     RocksDbCommon common(tx_context_);
     ASSERT_TRUE(common.get("{}", "123").ok());

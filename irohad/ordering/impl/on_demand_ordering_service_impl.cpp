@@ -111,7 +111,7 @@ bool OnDemandOrderingServiceImpl::isEmptyBatchesCache() const {
 }
 
 void OnDemandOrderingServiceImpl::forCachedBatches(
-    std::function<void(const BatchesSetType &)> const &f) const {
+    std::function<void(const transport::OdOsNotification::BatchesSetType &)> const &f) const {
   std::shared_lock<std::shared_timed_mutex> lock(batches_cache_cs_);
   f(batches_cache_);
 }
