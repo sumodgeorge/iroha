@@ -111,7 +111,7 @@ namespace iroha {
       bool batchAlreadyProcessed(
           const shared_model::interface::TransactionBatch &batch);
 
-      void insertBatchToCache(
+      bool insertBatchToCache(
           std::shared_ptr<shared_model::interface::TransactionBatch> const
               &batch);
 
@@ -122,7 +122,7 @@ namespace iroha {
 
       void forCachedBatches(
           std::function<void(const transport::OdOsNotification::BatchesSetType
-                                 &)> const &f) override;
+                                 &)> const &f) const override;
 
       std::vector<std::shared_ptr<shared_model::interface::Transaction>>
       getTransactionsFromBatchesCache(size_t requested_tx_amount);
@@ -149,6 +149,7 @@ namespace iroha {
 
       mutable std::shared_timed_mutex batches_cache_cs_;
       BatchesSetType batches_cache_;
+      uint64_t cached_txs_size_;
 
       std::shared_ptr<shared_model::interface::UnsafeProposalFactory>
           proposal_factory_;

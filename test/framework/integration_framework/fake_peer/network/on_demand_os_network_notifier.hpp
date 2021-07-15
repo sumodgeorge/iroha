@@ -27,6 +27,10 @@ namespace integration_framework {
       virtual boost::optional<std::shared_ptr<const ProposalType>>
       onRequestProposal(iroha::consensus::Round round);
 
+      void forCachedBatches(
+          std::function<void(const iroha::ordering::OnDemandOrderingService::
+                                 BatchesSetType &)> const &f) const override;
+
       rxcpp::observable<iroha::consensus::Round>
       getProposalRequestsObservable();
 
