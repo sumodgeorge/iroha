@@ -776,7 +776,7 @@ namespace iroha::ametsuchi {
         [func{std::forward<F>(func)}](auto const &it,
                                       auto const prefix_size) mutable {
           auto const key = it->key();
-          return func(rocksdb::Slice(
+          return std::forward<F>(func)(rocksdb::Slice(
                           key.data() + prefix_size + fmtstrings::kDelimiterSize,
                           key.size() - prefix_size
                               - fmtstrings::kDelimiterCountForAField
@@ -1077,7 +1077,7 @@ namespace iroha::ametsuchi {
   }
 
   /**
-   * Access to Stored blocks data.
+   * Access to Block store size.
    * @tparam kOp @see kDbOperation
    * @tparam kSc @see kDbEntry
    * @param common @see RocksDbCommon

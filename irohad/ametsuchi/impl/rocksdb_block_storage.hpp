@@ -12,7 +12,6 @@
 #include "logger/logger_fwd.hpp"
 
 namespace iroha::ametsuchi {
-  struct RocksDBPort;
   struct RocksDBContext;
 
   class RocksDbBlockStorage : public BlockStorage {

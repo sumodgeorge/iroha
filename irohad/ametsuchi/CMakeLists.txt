@@ -25,6 +25,7 @@ target_link_libraries(pool_wrapper
 
 add_library(rocksdb_block_storage
     impl/rocksdb_block_storage.cpp
+    impl/rocksdb_block_storage_factory.cpp
     )
 
 target_link_libraries(rocksdb_block_storage

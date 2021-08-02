@@ -12,6 +12,8 @@
 #include "ametsuchi/impl/in_memory_block_storage_factory.hpp"
 #include "ametsuchi/impl/pool_wrapper.hpp"
 #include "ametsuchi/impl/postgres_block_storage_factory.hpp"
+#include "ametsuchi/impl/rocksdb_block_storage_factory.hpp"
+#include "ametsuchi/impl/rocksdb_block_storage.hpp"
 #include "ametsuchi/impl/rocksdb_storage_impl.hpp"
 #include "ametsuchi/impl/storage_base.hpp"
 #include "ametsuchi/impl/storage_impl.hpp"
@@ -50,6 +52,19 @@ namespace {
         std::move(flat_file.assumeValue()),
         block_converter,
         log_manager->getChild("FlatFileBlockStorage")->getLogger());
+  }
+
+  std::unique_ptr<ametsuchi::BlockStorage> makeRocksDbBlockStorage(
+      std::shared_ptr<ametsuchi::RocksDBContext> db_context,
+      std::string const &block_storage_dir,
+      logger::LoggerManagerTreePtr log_manager) {
+    std::shared_ptr<shared_model::interface::BlockJsonConverter>
+        block_converter =
+        std::make_shared<shared_model::proto::ProtoBlockJsonConverter>();
+    return std::make_unique<ametsuchi::RocksDbBlockStorage>(
+        std::move(db_context),
+        block_converter,
+        log_manager->getChild("RocksDbBlockStorage")->getLogger());
   }
 
   std::unique_ptr<ametsuchi::BlockStorage> makePostgresBlockStorage(
@@ -109,9 +124,10 @@ iroha::initStorage(
         fmt::format("Flat file block storage is not present."));
 
   auto persistent_block_storage =
-      makeFlatFileBlockStorage(block_storage_dir.value(), log_manager);
+      makeRocksDbBlockStorage(db_context, block_storage_dir.value(), log_manager);
+
   return ametsuchi::RocksDbStorageImpl::create(
-      db_context,
+      std::move(db_context),
       perm_converter,
       std::move(pending_txs_storage),
       std::move(query_response_factory),
