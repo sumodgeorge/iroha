@@ -23,6 +23,18 @@ target_link_libraries(pool_wrapper
     SOCI::core
     )
 
+add_library(rocksdb_block_storage
+    impl/rocksdb_block_storage.cpp
+    )
+
+target_link_libraries(rocksdb_block_storage
+    libs_files
+    shared_model_proto_backend
+    logger
+    Boost::boost
+    RocksDB::rocksdb
+    )
+
 add_library(flat_file_storage
     impl/flat_file/flat_file.cpp
     impl/flat_file_block_storage.cpp
