@@ -56,7 +56,6 @@ namespace {
 
   std::unique_ptr<ametsuchi::BlockStorage> makeRocksDbBlockStorage(
       std::shared_ptr<ametsuchi::RocksDBContext> db_context,
-      std::string const &block_storage_dir,
       logger::LoggerManagerTreePtr log_manager) {
     std::shared_ptr<shared_model::interface::BlockJsonConverter>
         block_converter =
@@ -119,12 +118,8 @@ iroha::initStorage(
       temporary_block_storage_factory =
           std::make_unique<ametsuchi::InMemoryBlockStorageFactory>();
 
-  if (!block_storage_dir)
-    return iroha::expected::makeError(
-        fmt::format("Flat file block storage is not present."));
-
   auto persistent_block_storage =
-      makeRocksDbBlockStorage(db_context, block_storage_dir.value(), log_manager);
+      makeRocksDbBlockStorage(db_context, log_manager);
 
   return ametsuchi::RocksDbStorageImpl::create(
       std::move(db_context),
