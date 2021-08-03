@@ -12,8 +12,8 @@
 #include "ametsuchi/impl/in_memory_block_storage_factory.hpp"
 #include "ametsuchi/impl/pool_wrapper.hpp"
 #include "ametsuchi/impl/postgres_block_storage_factory.hpp"
-#include "ametsuchi/impl/rocksdb_block_storage_factory.hpp"
 #include "ametsuchi/impl/rocksdb_block_storage.hpp"
+#include "ametsuchi/impl/rocksdb_block_storage_factory.hpp"
 #include "ametsuchi/impl/rocksdb_storage_impl.hpp"
 #include "ametsuchi/impl/storage_base.hpp"
 #include "ametsuchi/impl/storage_impl.hpp"
@@ -59,7 +59,7 @@ namespace {
       logger::LoggerManagerTreePtr log_manager) {
     std::shared_ptr<shared_model::interface::BlockJsonConverter>
         block_converter =
-        std::make_shared<shared_model::proto::ProtoBlockJsonConverter>();
+            std::make_shared<shared_model::proto::ProtoBlockJsonConverter>();
     return std::make_unique<ametsuchi::RocksDbBlockStorage>(
         std::move(db_context),
         block_converter,

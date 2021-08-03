@@ -247,8 +247,8 @@ namespace iroha::ametsuchi::fmtstrings {
    * ######################################
    */
   // height ➡️ block data
-  static auto constexpr kBlockDataInStore{FMT_STRING(
-                                                   RDB_ROOT /**/ RDB_STORE /**/ RDB_XXX)};
+  static auto constexpr kBlockDataInStore{
+      FMT_STRING(RDB_ROOT /**/ RDB_STORE /**/ RDB_XXX)};
 
   // account/height/index/ts ➡️ tx_hash
   static auto constexpr kTransactionByPosition{FMT_STRING(
@@ -341,8 +341,8 @@ namespace iroha::ametsuchi::fmtstrings {
                      RDB_ACCOUNTS /**/ RDB_XXX /**/ RDB_F_TOTAL_COUNT)};
 
   // ➡️ value
-  static auto constexpr kBlocksTotalCount{FMT_STRING(
-                                              RDB_ROOT /**/ RDB_STORE /**/ RDB_F_TOTAL_COUNT)};
+  static auto constexpr kBlocksTotalCount{
+      FMT_STRING(RDB_ROOT /**/ RDB_STORE /**/ RDB_F_TOTAL_COUNT)};
 
   // ➡️ txs total count
   static auto constexpr kAllTxsTotalCount{FMT_STRING(
@@ -776,12 +776,13 @@ namespace iroha::ametsuchi {
         [func{std::forward<F>(func)}](auto const &it,
                                       auto const prefix_size) mutable {
           auto const key = it->key();
-          return std::forward<F>(func)(rocksdb::Slice(
-                          key.data() + prefix_size + fmtstrings::kDelimiterSize,
-                          key.size() - prefix_size
-                              - fmtstrings::kDelimiterCountForAField
-                                  * fmtstrings::kDelimiterSize),
-                      it->value());
+          return std::forward<F>(func)(
+              rocksdb::Slice(
+                  key.data() + prefix_size + fmtstrings::kDelimiterSize,
+                  key.size() - prefix_size
+                      - fmtstrings::kDelimiterCountForAField
+                          * fmtstrings::kDelimiterSize),
+              it->value());
         },
         strformat,
         std::forward<Args>(args)...);
@@ -1070,10 +1071,11 @@ namespace iroha::ametsuchi {
    * @return operation result
    */
   template <kDbOperation kOp = kDbOperation::kGet,
-      kDbEntry kSc = kDbEntry::kMustExist>
+            kDbEntry kSc = kDbEntry::kMustExist>
   inline expected::Result<std::optional<std::string_view>, DbError> forBlock(
       RocksDbCommon &common, uint64_t height) {
-    return dbCall<std::string_view, kOp, kSc>(common, fmtstrings::kBlockDataInStore, height);
+    return dbCall<std::string_view, kOp, kSc>(
+        common, fmtstrings::kBlockDataInStore, height);
   }
 
   /**
@@ -1084,7 +1086,7 @@ namespace iroha::ametsuchi {
    * @return operation result
    */
   template <kDbOperation kOp = kDbOperation::kGet,
-      kDbEntry kSc = kDbEntry::kMustExist>
+            kDbEntry kSc = kDbEntry::kMustExist>
   inline expected::Result<std::optional<uint64_t>, DbError> forBlocksTotalCount(
       RocksDbCommon &common) {
     return dbCall<uint64_t, kOp, kSc>(common, fmtstrings::kBlocksTotalCount);

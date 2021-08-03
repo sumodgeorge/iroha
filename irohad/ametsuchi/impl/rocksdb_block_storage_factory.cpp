@@ -5,15 +5,15 @@
 
 #include "ametsuchi/impl/rocksdb_block_storage_factory.hpp"
 
-#include "ametsuchi/impl/rocksdb_common.hpp"
 #include "ametsuchi/impl/rocksdb_block_storage.hpp"
+#include "ametsuchi/impl/rocksdb_common.hpp"
 
 using namespace iroha::ametsuchi;
 
 RocksDbBlockStorageFactory::RocksDbBlockStorageFactory(
     std::shared_ptr<RocksDBContext> db_context,
     std::shared_ptr<shared_model::interface::BlockJsonConverter>
-    json_block_converter,
+        json_block_converter,
     logger::LoggerManagerTreePtr log_manager)
     : db_context_(std::move(db_context)),
       json_block_converter_(std::move(json_block_converter)),

@@ -6,9 +6,9 @@
 #include "ametsuchi/impl/rocksdb_block_storage.hpp"
 #include "ametsuchi/impl/rocksdb_block_storage_factory.hpp"
 
-#include "ametsuchi/impl/rocksdb_common.hpp"
 #include <gtest/gtest.h>
 #include <boost/filesystem.hpp>
+#include "ametsuchi/impl/rocksdb_common.hpp"
 #include "framework/result_gtest_checkers.hpp"
 #include "framework/test_logger.hpp"
 #include "module/shared_model/interface_mocks.hpp"
@@ -99,8 +99,8 @@ TEST_F(RocksDbBlockStorageTest, FetchExisting) {
   EXPECT_CALL(*converter_, deserialize(_))
       .WillOnce(Invoke([&](const shared_model::interface::types::JsonType &)
                            -> iroha::expected::Result<
-              std::unique_ptr<shared_model::interface::Block>,
-              std::string> {
+                               std::unique_ptr<shared_model::interface::Block>,
+                               std::string> {
         auto return_block = std::make_unique<MockBlock>();
         raw_block = return_block.get();
         return iroha::expected::makeValue<
@@ -178,8 +178,8 @@ TEST_F(RocksDbBlockStorageTest, ForEach) {
   EXPECT_CALL(*converter_, deserialize(_))
       .WillOnce(Invoke([&](const shared_model::interface::types::JsonType &)
                            -> iroha::expected::Result<
-              std::unique_ptr<shared_model::interface::Block>,
-              std::string> {
+                               std::unique_ptr<shared_model::interface::Block>,
+                               std::string> {
         auto return_block = std::make_unique<MockBlock>();
         raw_block = return_block.get();
         return iroha::expected::makeValue<

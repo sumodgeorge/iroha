@@ -26,19 +26,20 @@ bool RocksDbBlockStorage::insert(
       [&](const auto &block_json) {
         RocksDbCommon common(db_context_);
 
-        if (auto result = forBlock<kDbOperation::kCheck, kDbEntry::kMustNotExist>(
-              common, block->height());
+        if (auto result =
+                forBlock<kDbOperation::kCheck, kDbEntry::kMustNotExist>(
+                    common, block->height());
             expected::hasError(result)) {
-          log_->warn("Error while block {} insertion. Code: {}. Description: {}",
-                      block->height(),
-                      result.assumeError().code,
-                      result.assumeError().description);
+          log_->warn(
+              "Error while block {} insertion. Code: {}. Description: {}",
+              block->height(),
+              result.assumeError().code,
+              result.assumeError().description);
           return false;
         }
 
         common.valueBuffer() = block_json.value;
-        if (auto result = forBlock<kDbOperation::kPut>(
-                common, block->height());
+        if (auto result = forBlock<kDbOperation::kPut>(common, block->height());
             expected::hasError(result)) {
           log_->error("Error while block {} storing. Code: {}. Description: {}",
                       block->height(),
@@ -48,16 +49,22 @@ bool RocksDbBlockStorage::insert(
         }
 
         uint64_t count = 0ull;
-        if (auto result = forBlocksTotalCount<kDbOperation::kGet, kDbEntry::kMustExist>(common); expected::hasValue(result))
+        if (auto result =
+                forBlocksTotalCount<kDbOperation::kGet, kDbEntry::kMustExist>(
+                    common);
+            expected::hasValue(result))
           count = *result.assumeValue();
 
         common.encode(count + 1ull);
-        if (auto result = forBlocksTotalCount<kDbOperation::kPut, kDbEntry::kMustExist>(
-              common);
+        if (auto result =
+                forBlocksTotalCount<kDbOperation::kPut, kDbEntry::kMustExist>(
+                    common);
             expected::hasError(result)) {
-          log_->error("Error while block total count storing. Code: {}. Description: {}",
-                      result.assumeError().code,
-                      result.assumeError().description);
+          log_->error(
+              "Error while block total count storing. Code: {}. Description: "
+              "{}",
+              result.assumeError().code,
+              result.assumeError().description);
           return false;
         }
 
@@ -100,24 +107,23 @@ RocksDbBlockStorage::fetch(
 
 size_t RocksDbBlockStorage::size() const {
   RocksDbCommon common(db_context_);
-  if (auto result = forBlocksTotalCount<kDbOperation::kGet, kDbEntry::kMustExist>(common); expected::hasValue(result))
+  if (auto result =
+          forBlocksTotalCount<kDbOperation::kGet, kDbEntry::kMustExist>(common);
+      expected::hasValue(result))
     return *result.assumeValue();
   return 0ull;
 }
 
-void RocksDbBlockStorage::reload() {
-}
+void RocksDbBlockStorage::reload() {}
 
 void RocksDbBlockStorage::clear() {
   RocksDbCommon common(db_context_);
 
   if (auto status = common.filterDelete(fmtstrings::kPathWsv); !status.ok())
-    log_->error("Unable to delete WSV. Description: {}",
-                status.ToString());
+    log_->error("Unable to delete WSV. Description: {}", status.ToString());
 
   if (auto status = common.filterDelete(fmtstrings::kPathStore); !status.ok())
-    log_->error("Unable to delete STORE. Description: {}",
-                status.ToString());
+    log_->error("Unable to delete STORE. Description: {}", status.ToString());
 }
 
 iroha::expected::Result<void, std::string> RocksDbBlockStorage::forEach(
