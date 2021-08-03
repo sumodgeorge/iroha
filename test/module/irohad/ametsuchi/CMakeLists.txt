@@ -9,6 +9,7 @@ target_link_libraries(ametsuchi_test
     ametsuchi_fixture
     common_test_constants
     flat_file_storage
+    rocksdb_block_storage
     shared_model_stateless_validation
     test_logger
     sync_subscription

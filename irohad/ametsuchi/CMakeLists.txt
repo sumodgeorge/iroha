@@ -214,6 +214,7 @@ target_link_libraries(ametsuchi
     rdb_connection_init
     ametsuchi_rocksdb
     flat_file_storage
+    rocksdb_block_storage
     postgres_indexer
     postgres_storage
     logger
