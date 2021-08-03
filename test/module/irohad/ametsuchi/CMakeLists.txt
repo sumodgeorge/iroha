@@ -163,6 +163,13 @@ target_link_libraries(flat_file_block_storage_test
     sync_subscription
     )
 
+addtest(rocksdb_block_storage_test rocksdb_block_storage_test.cpp)
+target_link_libraries(rocksdb_block_storage_test
+    ametsuchi
+    test_logger
+    sync_subscription
+    )
+
 addtest(postgres_block_storage_test postgres_block_storage_test.cpp)
 target_link_libraries(postgres_block_storage_test
     ametsuchi

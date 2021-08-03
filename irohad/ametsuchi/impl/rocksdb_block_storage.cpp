@@ -26,8 +26,18 @@ bool RocksDbBlockStorage::insert(
       [&](const auto &block_json) {
         RocksDbCommon common(db_context_);
 
+        if (auto result = forBlock<kDbOperation::kCheck, kDbEntry::kMustNotExist>(
+              common, block->height());
+            expected::hasError(result)) {
+          log_->warn("Error while block {} insertion. Code: {}. Description: {}",
+                      block->height(),
+                      result.assumeError().code,
+                      result.assumeError().description);
+          return false;
+        }
+
         common.valueBuffer() = block_json.value;
-        if (auto result = forBlock<kDbOperation::kPut, kDbEntry::kMustExist>(
+        if (auto result = forBlock<kDbOperation::kPut>(
                 common, block->height());
             expected::hasError(result)) {
           log_->error("Error while block {} storing. Code: {}. Description: {}",
