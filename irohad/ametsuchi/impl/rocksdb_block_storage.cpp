@@ -12,6 +12,30 @@
 
 using namespace iroha::ametsuchi;
 
+#define CHECK_OPERATION(command, ...)                                          \
+  if (auto result = (__VA_ARGS__); expected::hasError(result)) {               \
+    log_->error("Error while block {} " command ". Code: {}. Description: {}", \
+                block->height(),                                               \
+                result.assumeError().code,                                     \
+                result.assumeError().description);                             \
+    return false;                                                              \
+  }
+
+namespace {
+  inline iroha::expected::Result<void, DbError> incrementTotalBlocksCount(
+      iroha::ametsuchi::RocksDbCommon &common) {
+    RDB_TRY_GET_VALUE(
+        opt_count,
+        forBlocksTotalCount<kDbOperation::kGet, kDbEntry::kCanExist>(common));
+
+    common.encode(opt_count ? *opt_count + 1ull : 1ull);
+    RDB_ERROR_CHECK(
+        forBlocksTotalCount<kDbOperation::kPut, kDbEntry::kMustExist>(common));
+
+    return {};
+  }
+}  // namespace
+
 RocksDbBlockStorage::RocksDbBlockStorage(
     std::shared_ptr<RocksDBContext> db_context,
     std::shared_ptr<shared_model::interface::BlockJsonConverter> json_converter,
@@ -25,49 +49,16 @@ bool RocksDbBlockStorage::insert(
   return json_converter_->serialize(*block).match(
       [&](const auto &block_json) {
         RocksDbCommon common(db_context_);
-
-        if (auto result =
-                forBlock<kDbOperation::kCheck, kDbEntry::kMustNotExist>(
-                    common, block->height());
-            expected::hasError(result)) {
-          log_->warn(
-              "Error while block {} insertion. Code: {}. Description: {}",
-              block->height(),
-              result.assumeError().code,
-              result.assumeError().description);
-          return false;
-        }
+        CHECK_OPERATION("insertion",
+                        forBlock<kDbOperation::kCheck, kDbEntry::kMustNotExist>(
+                            common, block->height()));
 
         common.valueBuffer() = block_json.value;
-        if (auto result = forBlock<kDbOperation::kPut>(common, block->height());
-            expected::hasError(result)) {
-          log_->error("Error while block {} storing. Code: {}. Description: {}",
-                      block->height(),
-                      result.assumeError().code,
-                      result.assumeError().description);
-          return false;
-        }
+        CHECK_OPERATION("storing",
+                        forBlock<kDbOperation::kPut>(common, block->height()));
 
-        uint64_t count = 0ull;
-        if (auto result =
-                forBlocksTotalCount<kDbOperation::kGet, kDbEntry::kMustExist>(
-                    common);
-            expected::hasValue(result))
-          count = *result.assumeValue();
-
-        common.encode(count + 1ull);
-        if (auto result =
-                forBlocksTotalCount<kDbOperation::kPut, kDbEntry::kMustExist>(
-                    common);
-            expected::hasError(result)) {
-          log_->error(
-              "Error while block total count storing. Code: {}. Description: "
-              "{}",
-              result.assumeError().code,
-              result.assumeError().description);
-          return false;
-        }
-
+        CHECK_OPERATION("total count storing",
+                        incrementTotalBlocksCount(common));
         return true;
       },
       [this](const auto &error) {
