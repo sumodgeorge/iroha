@@ -24,11 +24,17 @@ namespace shared_model {
           transactions_ | boost::adaptors::transformed([](const auto &tx) {
             return tx->reducedHash();
           }));
+      txs_count_ = boost::size(transactions_);
     }
 
     const types::SharedTxsCollectionType &TransactionBatchImpl::transactions()
         const {
       return transactions_;
+    }
+
+    uint64_t TransactionBatchImpl::txsCountInBatch() const {
+      assert(txs_count_ == boost::size(transactions_));
+      return txs_count_;
     }
 
     const types::HashType &TransactionBatchImpl::reducedHash() const {

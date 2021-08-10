@@ -29,13 +29,15 @@ namespace shared_model {
 
       std::string toString() const override;
 
+      uint64_t txsCountInBatch() const override;
+
       bool addSignature(size_t number_of_tx,
                         types::SignedHexStringView signed_blob,
                         types::PublicKeyHexStringView public_key) override;
 
      private:
       types::SharedTxsCollectionType transactions_;
-
+      uint64_t txs_count_;
       types::HashType reduced_hash_;
     };
 

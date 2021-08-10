@@ -27,6 +27,12 @@ namespace shared_model {
        */
       virtual const types::SharedTxsCollectionType &transactions() const = 0;
 
+      /**
+       * Get transactions count in the batch
+       * @return count
+       */
+      virtual uint64_t txsCountInBatch() const = 0;
+
       // TODO [IR-1874] Akvinikym 16.11.18: rename the field
       /**
        * Get the concatenation of reduced hashes as a single hash
