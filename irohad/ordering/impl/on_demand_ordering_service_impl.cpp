@@ -60,7 +60,7 @@ bool OnDemandOrderingServiceImpl::insertBatchToCache(
     std::shared_ptr<shared_model::interface::TransactionBatch> const &batch) {
   auto const available_txs_count = batches_cache_.insertBatchToCache(batch);
   if (available_txs_count >= transaction_limit_)
-    getSubscription()->notify(EventTypes::kOnNewBatchInCache,
+    getSubscription()->notify(EventTypes::kOnTxsEnoughForProposal,
                               std::shared_ptr(batch));
 
   return true;
