@@ -97,7 +97,6 @@ struct MockTransactionBatch : public shared_model::interface::TransactionBatch {
       const shared_model::interface::types::SharedTxsCollectionType &());
   MOCK_CONST_METHOD0(reducedHash,
                      const shared_model::interface::types::HashType &());
-  MOCK_CONST_METHOD0(txsCountInBatch, uint64_t());
   MOCK_CONST_METHOD0(hasAllSignatures, bool());
   MOCK_METHOD3(addSignature,
                bool(size_t,

@@ -18,7 +18,7 @@ namespace iroha::ordering {
     std::unique_lock lock(batches_cache_cs_);
     if (used_batches_cache_.find(batch) == used_batches_cache_.end()) {
       batches_cache_.insert(batch);
-      available_txs_cache_size_ += batch->txsCountInBatch();
+      available_txs_cache_size_ += batch->transactions().size();
     }
 
     assert(count(batches_cache_) == available_txs_cache_size_);
@@ -46,7 +46,7 @@ namespace iroha::ordering {
                       [&hashes](const auto &tx) {
                         return hashes.find(tx->hash()) != hashes.end();
                       })) {
-        auto const erased_size = (*it)->txsCountInBatch();
+        auto const erased_size = (*it)->transactions().size();
         it = batches_cache_.erase(it);
         assert(available_txs_cache_size_ >= erased_size);
         available_txs_cache_size_ -= erased_size;
@@ -85,7 +85,7 @@ namespace iroha::ordering {
     std::unique_lock lock(batches_cache_cs_);
     auto it = batches_cache_.begin();
     while (it != batches_cache_.end()) {
-      auto const txs_count = (*it)->txsCountInBatch();
+      auto const txs_count = (*it)->transactions().size();
       if (collection.size() + txs_count > requested_tx_amount)
         continue;
 
@@ -106,7 +106,7 @@ namespace iroha::ordering {
     for (auto &batch : batches) {
       batches_cache_.erase(batch);
       used_batches_cache_.insert(batch);
-      moveToHeld(batch->txsCountInBatch());
+      moveToHeld(batch->transactions().size());
     }
     assert(count(batches_cache_) == available_txs_cache_size_);
     assert(count(used_batches_cache_) == held_txs_cache_size_);
