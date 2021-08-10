@@ -86,17 +86,17 @@ namespace iroha::ordering {
     auto it = batches_cache_.begin();
     while (it != batches_cache_.end()) {
       auto const txs_count = (*it)->transactions().size();
-      if (collection.size() + txs_count > requested_tx_amount)
+      if (collection.size() + txs_count > requested_tx_amount) {
+        ++it;
         continue;
+      }
 
       collection.insert(std::end(collection),
                         std::begin((*it)->transactions()),
                         std::end((*it)->transactions()));
       used_batches_cache_.insert(*it);
-      batches_cache_.erase(it);
-
+      it = batches_cache_.erase(it);
       moveToHeld(txs_count);
-      it = batches_cache_.begin();
     }
   }
 
