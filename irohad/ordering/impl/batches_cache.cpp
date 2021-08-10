@@ -84,10 +84,13 @@ namespace iroha::ordering {
 
     std::unique_lock lock(batches_cache_cs_);
     auto it = batches_cache_.begin();
-    while (it != batches_cache_.end()) {
+
+    uint32_t depth_counter = 0ul;
+    while (it != batches_cache_.end() && depth_counter < 8ul) {
       auto const txs_count = (*it)->transactions().size();
       if (collection.size() + txs_count > requested_tx_amount) {
         ++it;
+        ++depth_counter;
         continue;
       }
 
