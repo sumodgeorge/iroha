@@ -8,6 +8,59 @@
 #include "interfaces/iroha_internal/transaction_batch.hpp"
 #include "interfaces/transaction.hpp"
 
+namespace {
+  inline uint64_t count(
+      iroha::ordering::BatchesCache::BatchesSetType const &src) {
+    return std::accumulate(src.begin(),
+                           src.end(),
+                           0ull,
+                           [](unsigned long long sum, auto const &batch) {
+                             return sum + batch->transactions().size();
+                           });
+  }
+
+  inline void insertToCache(
+      std::shared_ptr<shared_model::interface::TransactionBatch> const &batch,
+      iroha::ordering::BatchesCache::BatchesSetType &cache,
+      uint64_t &counter) {
+    if (cache.insert(batch).second)
+      counter += batch->transactions().size();
+
+    assert(count(cache) == counter);
+  }
+
+  inline void removeFromCache(
+      std::shared_ptr<shared_model::interface::TransactionBatch> const &batch,
+      iroha::ordering::BatchesCache::BatchesSetType &cache,
+      uint64_t &counter) {
+    auto const was = cache.size();
+    cache.erase(batch);
+    if (cache.size() != was)
+      counter -= batch->transactions().size();
+
+    assert(count(cache) == counter);
+  }
+
+  inline void mergeCaches(iroha::ordering::BatchesCache::BatchesSetType &to,
+                          uint64_t &counter_to,
+                          iroha::ordering::BatchesCache::BatchesSetType &from,
+                          uint64_t &counter_from) {
+    auto it = from.begin();
+    while (it != from.end())
+      if (to.insert(*it).second) {
+        auto const tx_count = (*it)->transactions().size();
+        it = from.erase(it);
+
+        counter_to += tx_count;
+        counter_from -= tx_count;
+      } else
+        ++it;
+
+    assert(count(to) == counter_to);
+    assert(count(from) == counter_from);
+  }
+}  // namespace
+
 namespace iroha::ordering {
 
   BatchesCache::BatchesCache()
@@ -16,29 +69,22 @@ namespace iroha::ordering {
   uint64_t BatchesCache::insertBatchToCache(
       std::shared_ptr<shared_model::interface::TransactionBatch> const &batch) {
     std::unique_lock lock(batches_cache_cs_);
-    if (used_batches_cache_.find(batch) == used_batches_cache_.end()) {
-      batches_cache_.insert(batch);
-      available_txs_cache_size_ += batch->transactions().size();
-    }
 
-    assert(count(batches_cache_) == available_txs_cache_size_);
+    if (used_batches_cache_.find(batch) == used_batches_cache_.end())
+      insertToCache(batch, batches_cache_, available_txs_cache_size_);
+
     return available_txs_cache_size_;
   }
 
   void BatchesCache::removeFromBatchesCache(
       const OnDemandOrderingService::HashesSetType &hashes) {
     std::unique_lock lock(batches_cache_cs_);
-    batches_cache_.merge(used_batches_cache_);
-    moveToAvailable(held_txs_cache_size_);
 
+    mergeCaches(batches_cache_,
+                available_txs_cache_size_,
+                used_batches_cache_,
+                held_txs_cache_size_);
     assert(used_batches_cache_.empty());
-    if (!used_batches_cache_.empty()) {
-      auto const remains_count = count(used_batches_cache_);
-      moveToHeld(remains_count);
-    }
-
-    assert(count(batches_cache_) == available_txs_cache_size_);
-    assert(count(used_batches_cache_) == held_txs_cache_size_);
 
     for (auto it = batches_cache_.begin(); it != batches_cache_.end();)
       if (std::any_of(it->get()->transactions().begin(),
@@ -52,6 +98,9 @@ namespace iroha::ordering {
         available_txs_cache_size_ -= erased_size;
       } else
         ++it;
+
+    assert(count(batches_cache_) == available_txs_cache_size_);
+    assert(count(used_batches_cache_) == held_txs_cache_size_);
   }
 
   bool BatchesCache::isEmptyBatchesCache() const {
@@ -73,6 +122,8 @@ namespace iroha::ordering {
       std::function<void(const BatchesSetType &)> const &f) const {
     std::shared_lock lock(batches_cache_cs_);
     f(batches_cache_);
+    assert(count(batches_cache_) == available_txs_cache_size_);
+    assert(count(used_batches_cache_) == held_txs_cache_size_);
   }
 
   void BatchesCache::getTransactionsFromBatchesCache(
@@ -97,22 +148,23 @@ namespace iroha::ordering {
       collection.insert(std::end(collection),
                         std::begin((*it)->transactions()),
                         std::end((*it)->transactions()));
-      used_batches_cache_.insert(*it);
+
+      insertToCache(*it, used_batches_cache_, held_txs_cache_size_);
       it = batches_cache_.erase(it);
-      moveToHeld(txs_count);
+      available_txs_cache_size_ -= txs_count;
     }
+
+    assert(count(batches_cache_) == available_txs_cache_size_);
+    assert(count(used_batches_cache_) == held_txs_cache_size_);
   }
 
   void BatchesCache::processReceivedProposal(
       OnDemandOrderingService::CollectionType batches) {
     std::unique_lock lock(batches_cache_cs_);
     for (auto &batch : batches) {
-      batches_cache_.erase(batch);
-      used_batches_cache_.insert(batch);
-      moveToHeld(batch->transactions().size());
+      removeFromCache(batch, batches_cache_, available_txs_cache_size_);
+      insertToCache(batch, used_batches_cache_, held_txs_cache_size_);
     }
-    assert(count(batches_cache_) == available_txs_cache_size_);
-    assert(count(used_batches_cache_) == held_txs_cache_size_);
   }
 
 }  // namespace iroha::ordering

@@ -22,37 +22,18 @@ namespace shared_model::interface {
 namespace iroha::ordering {
 
   class BatchesCache {
+   public:
     using BatchesSetType = std::unordered_set<
         std::shared_ptr<shared_model::interface::TransactionBatch>,
         OnDemandOrderingService::BatchPointerHasher,
         shared_model::interface::BatchHashEquality>;
 
-    mutable std::shared_timed_mutex batches_cache_cs_;
+   private:
+    mutable std::shared_mutex batches_cache_cs_;
     BatchesSetType batches_cache_, used_batches_cache_;
 
     uint64_t available_txs_cache_size_;
     uint64_t held_txs_cache_size_;
-
-    uint64_t count(BatchesSetType const &src) {
-      return std::accumulate(src.begin(),
-                             src.end(),
-                             0ull,
-                             [](unsigned long long sum, auto const &batch) {
-                               return sum + boost::size(batch->transactions());
-                             });
-    }
-
-    void moveToAvailable(uint64_t count) {
-      assert(held_txs_cache_size_ >= count);
-      available_txs_cache_size_ += count;
-      held_txs_cache_size_ -= count;
-    }
-
-    void moveToHeld(uint64_t count) {
-      assert(available_txs_cache_size_ >= count);
-      available_txs_cache_size_ -= count;
-      held_txs_cache_size_ += count;
-    }
 
    public:
     BatchesCache(BatchesCache const &) = delete;
