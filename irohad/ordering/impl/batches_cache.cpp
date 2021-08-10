@@ -10,6 +10,62 @@
 
 namespace iroha::ordering {
 
+  BatchesContext::BatchesContext() : tx_count_(0ull) {}
+
+  uint64_t BatchesContext::count(BatchesSetType const &src) const {
+    return std::accumulate(src.begin(),
+                           src.end(),
+                           0ull,
+                           [](unsigned long long sum, auto const &batch) {
+                             return sum + batch->transactions().size();
+                           });
+  }
+
+  uint64_t BatchesContext::getTxsCount() const {
+    return tx_count_;
+  }
+
+  BatchesContext::BatchesSetType const &BatchesContext::getBatchesSet() const {
+    return batches_;
+  }
+
+  bool BatchesContext::insert(
+      std::shared_ptr<shared_model::interface::TransactionBatch> const &batch) {
+    auto const inserted = batches_.insert(batch).second;
+    if (inserted)
+      tx_count_ += batch->transactions().size();
+
+    assert(count(batches_) == tx_count_);
+    return inserted;
+  }
+
+  bool BatchesContext::removeBatch(
+      std::shared_ptr<shared_model::interface::TransactionBatch> const &batch) {
+    auto const was = batches_.size();
+    batches_.erase(batch);
+    if (batches_.size() != was)
+      tx_count_ -= batch->transactions().size();
+
+    assert(count(batches_) == tx_count_);
+    return (was != batches_.size());
+  }
+
+  void BatchesContext::merge(BatchesContext &from) {
+    auto it = from.batches_.begin();
+    while (it != from.batches_.end())
+      if (batches_.insert(*it).second) {
+        auto const tx_count = (*it)->transactions().size();
+        it = from.batches_.erase(it);
+
+        tx_count_ += tx_count;
+        from.tx_count_ -= tx_count;
+      } else
+        ++it;
+
+    assert(count(batches_) == tx_count_);
+    assert(count(from.batches_) == from.tx_count_);
+  }
+
   uint64_t BatchesCache::insertBatchToCache(
       std::shared_ptr<shared_model::interface::TransactionBatch> const &batch) {
     std::unique_lock lock(batches_cache_cs_);

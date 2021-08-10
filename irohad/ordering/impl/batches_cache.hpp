@@ -29,54 +29,28 @@ namespace iroha::ordering {
         shared_model::interface::BatchHashEquality>;
 
     BatchesContext(BatchesContext const &) = delete;
-    BatchesContext(BatchesContext &&) = default;
     BatchesContext &operator=(BatchesContext const &) = delete;
-    BatchesContext &operator=(BatchesContext &&) = default;
-    BatchesContext() : tx_count_(0ull) {}
+    BatchesContext();
 
    private:
     uint64_t tx_count_;
     BatchesSetType batches_;
 
-    uint64_t count(BatchesSetType const &src) {
-      return std::accumulate(src.begin(),
-                             src.end(),
-                             0ull,
-                             [](unsigned long long sum, auto const &batch) {
-                               return sum + batch->transactions().size();
-                             });
-    }
+    uint64_t count(BatchesSetType const &src) const;
 
    public:
-    uint64_t getTxsCount() const {
-      return tx_count_;
-    }
+    uint64_t getTxsCount() const;
 
-    BatchesSetType const &getBatchesSet() const {
-      return batches_;
-    }
+    BatchesSetType const &getBatchesSet() const;
 
     bool insert(std::shared_ptr<shared_model::interface::TransactionBatch> const
-                    &batch) {
-      auto const inserted = batches_.insert(batch).second;
-      if (inserted)
-        tx_count_ += batch->transactions().size();
-
-      assert(count(batches_) == tx_count_);
-      return inserted;
-    }
+                    &batch);
 
     bool removeBatch(
         std::shared_ptr<shared_model::interface::TransactionBatch> const
-            &batch) {
-      auto const was = batches_.size();
-      batches_.erase(batch);
-      if (batches_.size() != was)
-        tx_count_ -= batch->transactions().size();
+            &batch);
 
-      assert(count(batches_) == tx_count_);
-      return (was != batches_.size());
-    }
+    void merge(BatchesContext &from);
 
     template <typename _Predic>
     void remove(_Predic &&pred) {
@@ -94,22 +68,6 @@ namespace iroha::ordering {
 
       assert(count(batches_) == tx_count_);
     }
-
-    inline void merge(BatchesContext &from) {
-      auto it = from.batches_.begin();
-      while (it != from.batches_.end())
-        if (batches_.insert(*it).second) {
-          auto const tx_count = (*it)->transactions().size();
-          it = from.batches_.erase(it);
-
-          tx_count_ += tx_count;
-          from.tx_count_ -= tx_count;
-        } else
-          ++it;
-
-      assert(count(batches_) == tx_count_);
-      assert(count(from.batches_) == from.tx_count_);
-    }
   };
 
   class BatchesCache {
@@ -122,9 +80,7 @@ namespace iroha::ordering {
 
    public:
     BatchesCache(BatchesCache const &) = delete;
-    BatchesCache(BatchesCache &&) = default;
     BatchesCache &operator=(BatchesCache const &) = delete;
-    BatchesCache &operator=(BatchesCache &&) = default;
     BatchesCache() = default;
 
     uint64_t insertBatchToCache(
