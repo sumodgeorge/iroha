@@ -45,24 +45,18 @@ namespace {
     if (auto err = iroha::expected::resultToOptionalError(flat_file)) {
       throw StorageInitException{err.value()};
     }
-    std::shared_ptr<shared_model::interface::BlockJsonConverter>
-        block_converter =
-            std::make_shared<shared_model::proto::ProtoBlockJsonConverter>();
     return std::make_unique<ametsuchi::FlatFileBlockStorage>(
         std::move(flat_file.assumeValue()),
-        block_converter,
+        std::make_shared<shared_model::proto::ProtoBlockJsonConverter>(),
         log_manager->getChild("FlatFileBlockStorage")->getLogger());
   }
 
   std::unique_ptr<ametsuchi::BlockStorage> makeRocksDbBlockStorage(
       std::shared_ptr<ametsuchi::RocksDBContext> db_context,
       logger::LoggerManagerTreePtr log_manager) {
-    std::shared_ptr<shared_model::interface::BlockJsonConverter>
-        block_converter =
-            std::make_shared<shared_model::proto::ProtoBlockJsonConverter>();
     return std::make_unique<ametsuchi::RocksDbBlockStorage>(
         std::move(db_context),
-        block_converter,
+        std::make_shared<shared_model::proto::ProtoBlockJsonConverter>(),
         log_manager->getChild("RocksDbBlockStorage")->getLogger());
   }
 
